@@ -1,0 +1,71 @@
+# ==============================================================================
+# Nightly Evaluation Regression Suite — OmniComply
+# Runs the full eval suite every night and flags regressions.
+# ==============================================================================
+
+name: Nightly Eval Regression
+
+on:
+  schedule:
+    - cron: "0 3 * * *"  # 3:00 AM UTC daily
+  workflow_dispatch:       # Allow manual trigger
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  nightly-eval:
+    name: "🌙 Nightly Regression Suite"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Download previous eval report
+        uses: actions/download-artifact@v4
+        with:
+          name: nightly-eval-report
+          path: eval/reports/outputs/previous/
+        continue-on-error: true
+
+      - name: Run nightly regression
+        env:
+          EVAL_FAITHFULNESS_THRESHOLD: "0.90"
+          EVAL_RELEVANCY_THRESHOLD: "0.85"
+          EVAL_CONTEXT_PRECISION_THRESHOLD: "0.80"
+        run: python -m eval.pipelines.nightly_regression
+
+      - name: Upload eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-eval-report
+          path: eval/reports/outputs/
+          retention-days: 90
+
+      - name: Comment on regression
+        if: failure()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const report = fs.readFileSync('eval/reports/outputs/regression_summary.txt', 'utf8');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `🚨 Nightly Eval Regression Detected - ${new Date().toISOString().split('T')[0]}`,
+              body: `## Evaluation Regression Report\n\n\`\`\`\n${report}\n\`\`\`\n\nPlease investigate the regression in RAG quality metrics.`,
+              labels: ['eval-regression', 'priority:high']
+            });
+

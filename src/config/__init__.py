@@ -1,0 +1,5 @@
+"""OmniComply configuration module."""
+
+from src.config.settings import Settings
+
+__all__ = ["Settings"]

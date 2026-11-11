@@ -1,0 +1,112 @@
+# ==============================================================================
+# CI Pipeline — OmniComply
+# Runs lint, unit tests, and evaluation gate on every push/PR.
+# ==============================================================================
+
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.11"
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # Lint — Code quality checks
+  # ---------------------------------------------------------------------------
+  lint:
+    name: "🔍 Lint"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Install ruff
+        run: pip install ruff
+
+      - name: Run ruff check
+        run: ruff check src/ tests/ eval/
+
+      - name: Run ruff format check
+        run: ruff format --check src/ tests/ eval/
+
+  # ---------------------------------------------------------------------------
+  # Test — Unit tests with coverage
+  # ---------------------------------------------------------------------------
+  test:
+    name: "🧪 Unit Tests"
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Run unit tests
+        run: |
+          pytest tests/unit/ -v --tb=short \
+            --cov=src --cov-report=xml --cov-report=term-missing \
+            -m "not integration and not eval and not slow"
+
+      - name: Upload coverage
+        uses: codecov/codecov-action@v4
+        with:
+          file: coverage.xml
+          fail_ci_if_error: false
+
+  # ---------------------------------------------------------------------------
+  # Eval Gate — Block merge if RAG metrics regress
+  # ---------------------------------------------------------------------------
+  eval-gate:
+    name: "📊 Eval Gate"
+    runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install -e .
+
+      - name: Run evaluation gate
+        env:
+          EVAL_FAITHFULNESS_THRESHOLD: "0.90"
+          EVAL_RELEVANCY_THRESHOLD: "0.85"
+          EVAL_CONTEXT_PRECISION_THRESHOLD: "0.80"
+        run: python -m eval.pipelines.ci_eval_gate --strict
+
+      - name: Upload eval report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: eval-report
+          path: eval/reports/outputs/
+          retention-days: 30
+

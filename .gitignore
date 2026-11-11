@@ -1,0 +1,105 @@
+# ========================
+# OmniComply .gitignore
+# ========================
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+eggs/
+*.whl
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# Environment variables
+.env
+.env.local
+.env.production
+
+# Docker
+docker-compose.override.yml
+
+# Model checkpoints & artifacts
+models/
+checkpoints/
+*.ckpt
+*.pt
+*.pth
+*.bin
+*.safetensors
+*.onnx
+*.gguf
+
+# Eval outputs
+eval/reports/outputs/
+eval/reports/*.html
+eval/reports/*.json
+eval_results/
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Data
+data/
+*.csv
+*.parquet
+*.jsonl
+!eval/datasets/*.jsonl
+
+# Logs
+logs/
+*.log
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Jupyter
+.ipynb_checkpoints/
+*.ipynb_metadata
+
+# Redis dump
+dump.rdb
+
+# Coverage
+htmlcov/
+.coverage
+.coverage.*
+coverage.xml
+
+# Mypy / type checking
+.mypy_cache/
+.dmypy.json
+
+# Ruff
+.ruff_cache/
+
+# Pytest
+.pytest_cache/
+
+# Temp
+tmp/
+temp/
+scratch/
+
