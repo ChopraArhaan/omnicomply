@@ -10,9 +10,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import structlog
-from langchain.chains.summarize import load_summarize_chain
-from langchain.text_splitter import RecursiveCharacterTextSplitter
+from langchain_classic.chains.summarize import load_summarize_chain
 from langchain_core.prompts import PromptTemplate
+from langchain_text_splitters import RecursiveCharacterTextSplitter
 from pydantic import BaseModel, Field
 
 if TYPE_CHECKING:
