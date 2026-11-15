@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from src.ingestion.chunker import AdaptiveChunker
 from src.ingestion.pdf_parser import PageContent, ParsedDocument
 
@@ -45,7 +46,9 @@ def test_chunker_section_headings(chunker: AdaptiveChunker):
     assert headings_found
 
 
-def test_chunker_metadata_propagation(chunker: AdaptiveChunker, sample_parsed_document: ParsedDocument):
+def test_chunker_metadata_propagation(
+    chunker: AdaptiveChunker, sample_parsed_document: ParsedDocument
+):
     chunks = chunker.chunk(sample_parsed_document)
     assert chunks[0].metadata.chunk_index == 0
     assert chunks[0].metadata.page_num == 1

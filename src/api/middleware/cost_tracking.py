@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-import json
 import time
-from typing import Callable, Optional
+from typing import TYPE_CHECKING
 
 import structlog
-from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from fastapi import Request, Response
 
 logger = structlog.get_logger(__name__)
 
@@ -25,6 +28,7 @@ class CostTrackingMiddleware(BaseHTTPMiddleware):
         if self._redis_client is None and self.redis_url:
             try:
                 import redis.asyncio as aioredis
+
                 self._redis_client = aioredis.from_url(self.redis_url, decode_responses=True)
             except Exception as e:
                 logger.warning("cost_tracking_redis_unavailable", error=str(e))

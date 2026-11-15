@@ -3,17 +3,18 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
-from pydantic import BaseModel, Field
 import structlog
+from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
 
 
 class Anomaly(BaseModel):
     """Detected anomaly in regulatory publishing or risk scores."""
+
     timestamp: str
     value: float
     expected_value: float
@@ -24,6 +25,7 @@ class Anomaly(BaseModel):
 
 class Forecast(BaseModel):
     """Projected future values for regulatory velocity or risk scores."""
+
     metric_name: str
     horizon_days: int
     predicted_values: list[float]
@@ -47,7 +49,7 @@ class RegulatoryForecaster:
         metric_key: str = "score",
     ) -> Forecast:
         """Forecast future values using Holt-Winters exponential smoothing baseline.
-        
+
         Designed to allow hot-swapping with TimesFM/Chronos foundation models.
         """
         if not historical_scores:
@@ -151,7 +153,7 @@ class RegulatoryForecaster:
         anomalies: list[Anomaly] = []
         for item in time_series:
             val = float(item.get(value_key, 0.0))
-            ts = str(item.get(time_key, datetime.now(timezone.utc).isoformat()))
+            ts = str(item.get(time_key, datetime.now(UTC).isoformat()))
             z_score = abs(val - mean) / std_dev
 
             if z_score >= self.anomaly_z_threshold:

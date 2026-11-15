@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING
 
 import structlog
-from src.agents.state import AgentState
+
 from src.analysis.classifier import RegulatoryClassifier
 from src.analysis.risk_scorer import ComplianceRiskScorer
 from src.analysis.summarizer import RegulatoryDocumentSummarizer
+
+if TYPE_CHECKING:
+    from src.agents.state import AgentState
 
 logger = structlog.get_logger(__name__)
 
@@ -30,7 +33,7 @@ class ComplianceAgent:
         """Run classification, risk assessment, and summarization on document state."""
         chunks = state.get("chunks", [])
         entities = state.get("entities", [])
-        
+
         # Combine text from chunks or state
         full_text = " ".join([c.get("content", "") for c in chunks]) if chunks else ""
         if not full_text and state.get("query"):
@@ -40,7 +43,9 @@ class ComplianceAgent:
             state["error"] = "ComplianceAgent found no document content to analyze"
             return state
 
-        logger.info("compliance_agent_analyzing_document", text_len=len(full_text), entities=len(entities))
+        logger.info(
+            "compliance_agent_analyzing_document", text_len=len(full_text), entities=len(entities)
+        )
         try:
             # 1. Domain & Urgency Classification
             domain_result = self.classifier.classify_domain(full_text[:2000])

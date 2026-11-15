@@ -48,7 +48,7 @@ DOCUMENT_TYPES: list[str] = [
 # ---------------------------------------------------------------------------
 
 
-class UrgencyLevel(str, enum.Enum):
+class UrgencyLevel(enum.StrEnum):
     """Urgency classification for a regulatory document."""
 
     CRITICAL = "CRITICAL"
@@ -60,9 +60,7 @@ class UrgencyLevel(str, enum.Enum):
 class ClassificationResult(BaseModel):
     """Result of classifying a document into a regulatory domain."""
 
-    domain: str = Field(
-        ..., description="Top predicted regulatory domain."
-    )
+    domain: str = Field(..., description="Top predicted regulatory domain.")
     confidence: float = Field(
         ...,
         ge=0.0,
@@ -226,7 +224,7 @@ class RegulatoryClassifier:
 
         labels: list[str] = result["labels"]
         scores: list[float] = result["scores"]
-        all_scores = dict(zip(labels, scores))
+        all_scores = dict(zip(labels, scores, strict=False))
 
         classification = ClassificationResult(
             domain=labels[0],
@@ -269,7 +267,7 @@ class RegulatoryClassifier:
         keyword_boosts = self._keyword_urgency_boost(text)
 
         combined_scores: dict[UrgencyLevel, float] = {}
-        for label, score in zip(labels, scores):
+        for label, score in zip(labels, scores, strict=False):
             level = _URGENCY_LABEL_MAP[label]
             boost = keyword_boosts.get(level, 0.0)
             combined_scores[level] = score + boost
@@ -295,9 +293,7 @@ class RegulatoryClassifier:
         Returns:
             The predicted document type string.
         """
-        logger.info(
-            "classifier.classify_document_type.start", text_len=len(text)
-        )
+        logger.info("classifier.classify_document_type.start", text_len=len(text))
 
         result = self._zero_shot(
             text,

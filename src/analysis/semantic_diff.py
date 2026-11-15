@@ -33,7 +33,7 @@ CONFLICT_SIMILARITY_THRESHOLD = 0.70  # minimum similarity to consider a conflic
 # ---------------------------------------------------------------------------
 
 
-class ChangeType(str, enum.Enum):
+class ChangeType(enum.StrEnum):
     """Type of change detected between two paragraph versions."""
 
     MINOR_EDIT = "minor_edit"
@@ -53,9 +53,7 @@ class ModifiedSection(BaseModel):
         le=1.0,
         description="Cosine similarity between the two versions.",
     )
-    change_type: ChangeType = Field(
-        ..., description="Category of the change."
-    )
+    change_type: ChangeType = Field(..., description="Category of the change.")
 
 
 class SemanticDiff(BaseModel):
@@ -81,7 +79,7 @@ class SemanticDiff(BaseModel):
     )
 
 
-class ConflictType(str, enum.Enum):
+class ConflictType(enum.StrEnum):
     """Type of conflict between two regulations."""
 
     CONTRADICTORY = "contradictory"
@@ -89,7 +87,7 @@ class ConflictType(str, enum.Enum):
     AMBIGUOUS = "ambiguous"
 
 
-class ConflictSeverity(str, enum.Enum):
+class ConflictSeverity(enum.StrEnum):
     """Severity of a detected conflict."""
 
     HIGH = "high"
@@ -100,21 +98,11 @@ class ConflictSeverity(str, enum.Enum):
 class Conflict(BaseModel):
     """A detected conflict between two regulatory documents."""
 
-    section_a: str = Field(
-        ..., description="Text from the first regulation."
-    )
-    section_b: str = Field(
-        ..., description="Text from the second regulation."
-    )
-    conflict_type: ConflictType = Field(
-        ..., description="Category of the conflict."
-    )
-    severity: ConflictSeverity = Field(
-        ..., description="Severity of the conflict."
-    )
-    explanation: str = Field(
-        ..., description="Human-readable explanation of the conflict."
-    )
+    section_a: str = Field(..., description="Text from the first regulation.")
+    section_b: str = Field(..., description="Text from the second regulation.")
+    conflict_type: ConflictType = Field(..., description="Category of the conflict.")
+    severity: ConflictSeverity = Field(..., description="Severity of the conflict.")
+    explanation: str = Field(..., description="Human-readable explanation of the conflict.")
 
 
 # ---------------------------------------------------------------------------
@@ -130,17 +118,11 @@ def _split_paragraphs(text: str) -> list[str]:
     return [p.strip() for p in paragraphs if p.strip()]
 
 
-def _cosine_similarity_matrix(
-    embeddings_a: np.ndarray, embeddings_b: np.ndarray
-) -> np.ndarray:
+def _cosine_similarity_matrix(embeddings_a: np.ndarray, embeddings_b: np.ndarray) -> np.ndarray:
     """Compute pairwise cosine similarity between two sets of embeddings."""
     # Normalize rows.
-    norm_a = embeddings_a / (
-        np.linalg.norm(embeddings_a, axis=1, keepdims=True) + 1e-10
-    )
-    norm_b = embeddings_b / (
-        np.linalg.norm(embeddings_b, axis=1, keepdims=True) + 1e-10
-    )
+    norm_a = embeddings_a / (np.linalg.norm(embeddings_a, axis=1, keepdims=True) + 1e-10)
+    norm_b = embeddings_b / (np.linalg.norm(embeddings_b, axis=1, keepdims=True) + 1e-10)
     return norm_a @ norm_b.T
 
 
@@ -257,13 +239,9 @@ class SemanticDiffEngine:
         if not old_paras and not new_paras:
             return SemanticDiff(overall_similarity=1.0)
         if not old_paras:
-            return SemanticDiff(
-                added_sections=new_paras, overall_similarity=0.0
-            )
+            return SemanticDiff(added_sections=new_paras, overall_similarity=0.0)
         if not new_paras:
-            return SemanticDiff(
-                removed_sections=old_paras, overall_similarity=0.0
-            )
+            return SemanticDiff(removed_sections=old_paras, overall_similarity=0.0)
 
         old_emb = self._encode(old_paras)
         new_emb = self._encode(new_paras)
@@ -301,14 +279,8 @@ class SemanticDiffEngine:
                     )
                 )
 
-        removed = [
-            old_paras[i] for i in range(len(old_paras)) if i not in old_matched
-        ]
-        added = [
-            new_paras[j]
-            for j in range(len(new_paras))
-            if j not in new_matched
-        ]
+        removed = [old_paras[i] for i in range(len(old_paras)) if i not in old_matched]
+        added = [new_paras[j] for j in range(len(new_paras)) if j not in new_matched]
 
         overall = float(np.mean(similarities)) if similarities else 0.0
 

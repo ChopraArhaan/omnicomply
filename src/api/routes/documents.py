@@ -5,20 +5,21 @@ Prefix: ``/api/v1/documents``
 
 Endpoints
 ---------
-* ``POST /upload`` – Accept a file, trigger async ingestion, return task/document ids.
-* ``GET /``        – List documents with pagination.
-* ``GET /{id}``    – Retrieve document metadata & processing status.
-* ``DELETE /{id}`` – Remove a document plus its chunks and entities.
+* ``POST /upload`` - Accept a file, trigger async ingestion, return task/document ids.
+* ``GET /``        - List documents with pagination.
+* ``GET /{id}``    - Retrieve document metadata & processing status.
+* ``DELETE /{id}`` - Remove a document plus its chunks and entities.
 """
 
 from __future__ import annotations
 
+import contextlib
 import uuid
-from datetime import datetime, timezone
-from typing import Any
+from datetime import UTC, datetime
+from typing import Annotated, Any
 
 import structlog
-from fastapi import APIRouter, HTTPException, UploadFile, File, Query
+from fastapi import APIRouter, File, HTTPException, Query, UploadFile
 from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
@@ -84,7 +85,7 @@ _documents: dict[str, dict[str, Any]] = {}
 
 
 @router.post("/upload", response_model=DocumentUploadResponse, status_code=202)
-async def upload_document(file: UploadFile = File(...)) -> DocumentUploadResponse:
+async def upload_document(file: Annotated[UploadFile, File(...)]) -> DocumentUploadResponse:
     """Accept a file upload and trigger the asynchronous ingestion pipeline.
 
     The file is persisted to a temporary location and a Celery task is
@@ -99,15 +100,14 @@ async def upload_document(file: UploadFile = File(...)) -> DocumentUploadRespons
     )
 
     # Persist upload to a temp path
-    import tempfile, os, shutil
+    import os
+    import shutil
+    import tempfile
 
     suffix = os.path.splitext(file.filename or "")[1]
-    tmp = tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix="omni_")
-    try:
+    with tempfile.NamedTemporaryFile(delete=False, suffix=suffix, prefix="omni_") as tmp:
         shutil.copyfileobj(file.file, tmp)
         tmp_path = tmp.name
-    finally:
-        tmp.close()
 
     # Dispatch Celery task
     try:
@@ -120,7 +120,7 @@ async def upload_document(file: UploadFile = File(...)) -> DocumentUploadRespons
         task_id = str(uuid.uuid4())  # fallback id when broker is unreachable
 
     # Track in memory store
-    now = datetime.now(timezone.utc)
+    now = datetime.now(UTC)
     _documents[document_id] = {
         "document_id": document_id,
         "filename": file.filename or "unknown",
@@ -182,10 +182,8 @@ async def delete_document(document_id: str) -> DeleteResponse:
 
     tmp_path = doc.get("metadata", {}).get("tmp_path")
     if tmp_path and os.path.exists(tmp_path):
-        try:
+        with contextlib.suppress(OSError):
             os.unlink(tmp_path)
-        except OSError:
-            pass
 
     # In production: delete from vector store + graph + DB
     try:
@@ -194,8 +192,6 @@ async def delete_document(document_id: str) -> DeleteResponse:
         state = get_state()
         vs = state.get("vector_store")
         if vs:
-            import asyncio
-
             await vs.delete_document(document_id)
     except Exception:
         logger.warning("documents.delete.vector_store_cleanup_failed", exc_info=True)

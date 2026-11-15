@@ -12,7 +12,7 @@ You are a senior regulatory analyst preparing a briefing for the Chief
 Compliance Officer.
 
 Summarise the following regulatory document in a concise executive summary
-(300–500 words).  Structure your summary as follows:
+(300-500 words).  Structure your summary as follows:
 
 1. **Regulatory Authority & Scope** — Which agency issued the regulation and
    what industry / activity does it govern?

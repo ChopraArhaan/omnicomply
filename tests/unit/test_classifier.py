@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from unittest.mock import MagicMock, patch
+
 import pytest
 
 from src.analysis.classifier import (
@@ -25,9 +26,19 @@ def mock_pipeline():
 def test_classify_domain_with_mock(mock_pipeline):
     with patch("src.analysis.classifier.pipeline", return_value=mock_pipeline):
         classifier = RegulatoryClassifier()
-        result = classifier.classify_domain("SEC requires Form 10-K disclosures regarding public offerings.")
+        result = classifier.classify_domain(
+            "SEC requires Form 10-K disclosures regarding public offerings."
+        )
         assert isinstance(result, ClassificationResult)
-        assert result.domain in ["financial", "healthcare", "environmental", "data_privacy", "labor", "trade", "technology"]
+        assert result.domain in [
+            "financial",
+            "healthcare",
+            "environmental",
+            "data_privacy",
+            "labor",
+            "trade",
+            "technology",
+        ]
         assert 0.0 <= result.confidence <= 1.0
 
 
@@ -43,5 +54,7 @@ def test_classify_urgency_critical():
 def test_classify_document_type(mock_pipeline):
     with patch("src.analysis.classifier.pipeline", return_value=mock_pipeline):
         classifier = RegulatoryClassifier()
-        doc_type = classifier.classify_document_type("Final rule regarding capital adequacy standards.")
+        doc_type = classifier.classify_document_type(
+            "Final rule regarding capital adequacy standards."
+        )
         assert doc_type in ["rule", "guidance", "enforcement_action", "amendment", "notice"]

@@ -3,18 +3,19 @@
 from __future__ import annotations
 
 import re
-from datetime import datetime, timezone
-from enum import Enum
-from typing import Any
+from datetime import UTC, datetime
+from enum import StrEnum
+from typing import Any, ClassVar
 
-from pydantic import BaseModel, Field
 import structlog
+from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
 
 
-class RiskLevel(str, Enum):
+class RiskLevel(StrEnum):
     """Categorical risk rating."""
+
     CRITICAL = "CRITICAL"
     HIGH = "HIGH"
     MEDIUM = "MEDIUM"
@@ -23,6 +24,7 @@ class RiskLevel(str, Enum):
 
 class RiskFactor(BaseModel):
     """An individual contributor to the overall risk score."""
+
     name: str
     score: float = Field(..., ge=0.0, le=100.0)
     weight: float = Field(..., ge=0.0, le=1.0)
@@ -32,16 +34,18 @@ class RiskFactor(BaseModel):
 
 class RiskAssessment(BaseModel):
     """Comprehensive risk assessment for a regulatory document or policy."""
+
     overall_score: float = Field(..., ge=0.0, le=100.0)
     risk_level: RiskLevel
     risk_factors: list[RiskFactor] = Field(default_factory=list)
     recommendations: list[str] = Field(default_factory=list)
-    assessed_at: datetime = Field(default_factory=lambda: datetime.now(timezone.utc))
+    assessed_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
     metadata: dict[str, Any] = Field(default_factory=dict)
 
 
 class PortfolioRisk(BaseModel):
     """Aggregated risk across multiple documents/policies."""
+
     average_score: float
     max_score: float
     risk_distribution: dict[str, int]
@@ -53,7 +57,7 @@ class ComplianceRiskScorer:
     """Evaluates regulatory compliance risk from text and extracted entities."""
 
     # High-risk signal keywords
-    PENALTY_PATTERNS = [
+    PENALTY_PATTERNS: ClassVar[list[str]] = [
         r"\$\s*\d+(?:,\d{3})*(?:\.\d+)?\s*(?:million|billion|thousand)?",
         r"civil\s+penalt(?:y|ies)",
         r"criminal\s+liabilit(?:y|ies)",
@@ -63,7 +67,7 @@ class ComplianceRiskScorer:
         r"cease\s+and\s+desist",
     ]
 
-    ENFORCEMENT_PATTERNS = [
+    ENFORCEMENT_PATTERNS: ClassVar[list[str]] = [
         r"enforcement\s+action",
         r"mandatory\s+compliance",
         r"shall\s+(?:immediately|forthwith|promptly)",
@@ -72,7 +76,7 @@ class ComplianceRiskScorer:
         r"suspension",
     ]
 
-    DEADLINE_PATTERNS = [
+    DEADLINE_PATTERNS: ClassVar[list[str]] = [
         r"within\s+\d+\s+days",
         r"effective\s+immediately",
         r"no\s+later\s+than",
@@ -242,13 +246,21 @@ class ComplianceRiskScorer:
         for factor in factors:
             if factor.score >= 50.0:
                 if factor.name == "Penalty Exposure":
-                    recs.append("Conduct immediate legal review of liability and penalty provisions.")
+                    recs.append(
+                        "Conduct immediate legal review of liability and penalty provisions."
+                    )
                 elif factor.name == "Enforcement Severity":
-                    recs.append("Prioritize gap analysis against mandatory operational requirements.")
+                    recs.append(
+                        "Prioritize gap analysis against mandatory operational requirements."
+                    )
                 elif factor.name == "Implementation Urgency":
-                    recs.append("Establish cross-functional compliance task force for rapid remediation.")
+                    recs.append(
+                        "Establish cross-functional compliance task force for rapid remediation."
+                    )
                 elif factor.name == "Regulatory Scope":
-                    recs.append(f"Audit affected subsidiary policies across referenced jurisdictions ({domain}).")
+                    recs.append(
+                        f"Audit affected subsidiary policies across referenced jurisdictions ({domain})."
+                    )
         if not recs:
             recs.append("Standard periodic compliance monitoring recommended.")
         return recs

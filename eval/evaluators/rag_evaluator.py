@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -17,14 +17,16 @@ from eval.metrics.regulatory_accuracy import RegulatoryAccuracyMetric
 
 try:
     import structlog
+
     logger = structlog.get_logger(__name__)
 except ImportError:
     import logging
+
     logger = logging.getLogger(__name__)
 
 
 class EvalReport(BaseModel):
-    timestamp: str = Field(default_factory=lambda: datetime.now(timezone.utc).isoformat())
+    timestamp: str = Field(default_factory=lambda: datetime.now(UTC).isoformat())
     model_version: str = "omnicomply-v0.1.0"
     total_test_cases: int
     overall_pass_rate: float
@@ -55,7 +57,7 @@ class RAGEvaluator:
             raise FileNotFoundError(f"Dataset not found at {path}")
 
         records = []
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             for line in f:
                 if line.strip():
                     records.append(json.loads(line))
@@ -65,7 +67,6 @@ class RAGEvaluator:
         rel_scores = []
         prec_scores = []
         acc_scores = []
-        all_passed = True
 
         for rec in records:
             question = rec["question"]
@@ -78,11 +79,11 @@ class RAGEvaluator:
             f_res = self.faith_metric.score(question, simulated_answer, context)
             r_res = self.rel_metric.score(question, simulated_answer)
             p_res = self.prec_metric.score(question, context_chunks, ground_truth)
-            a_res = self.acc_metric.score(simulated_answer, ground_truth, domain=rec.get("domain", "general"))
+            a_res = self.acc_metric.score(
+                simulated_answer, ground_truth, domain=rec.get("domain", "general")
+            )
 
             case_passed = f_res.passed and r_res.passed and p_res.passed and a_res.passed
-            if not case_passed:
-                all_passed = False
 
             faith_scores.append(f_res.score)
             rel_scores.append(r_res.score)

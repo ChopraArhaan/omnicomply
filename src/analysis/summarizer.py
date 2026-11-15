@@ -7,14 +7,17 @@ using LangChain's map-reduce summarization chain for handling long documents.
 
 from __future__ import annotations
 
-import structlog
-from pydantic import BaseModel, Field
+from typing import TYPE_CHECKING
 
+import structlog
 from langchain.chains.summarize import load_summarize_chain
 from langchain.text_splitter import RecursiveCharacterTextSplitter
-from langchain_core.documents import Document
-from langchain_core.language_models import BaseLLM
 from langchain_core.prompts import PromptTemplate
+from pydantic import BaseModel, Field
+
+if TYPE_CHECKING:
+    from langchain_core.documents import Document
+    from langchain_core.language_models import BaseLLM
 
 logger = structlog.get_logger(__name__)
 
@@ -44,9 +47,7 @@ class DetailedSummary(BaseModel):
         default_factory=list,
         description="Per-section summaries.",
     )
-    overall_summary: str = Field(
-        ..., description="Consolidated summary across sections."
-    )
+    overall_summary: str = Field(..., description="Consolidated summary across sections.")
     word_count: int = Field(..., description="Word count of the source document.")
 
 
@@ -333,9 +334,7 @@ class RegulatoryDocumentSummarizer:
         )
         return summary
 
-    def detailed_summary(
-        self, text: str, max_sections: int = 10
-    ) -> DetailedSummary:
+    def detailed_summary(self, text: str, max_sections: int = 10) -> DetailedSummary:
         """Produce a section-by-section detailed summary.
 
         Each chunk of the document is individually summarized (map step) and
@@ -375,9 +374,7 @@ class RegulatoryDocumentSummarizer:
             prompt=_EXECUTIVE_COMBINE_PROMPT,
         )
         overall_raw = combine_chain.invoke({"input_documents": docs})["output_text"]
-        overall_summary = self._parse_executive_output(
-            overall_raw, word_count
-        ).summary_text
+        overall_summary = self._parse_executive_output(overall_raw, word_count).summary_text
 
         result = DetailedSummary(
             title=sections[0].heading if sections else "Untitled",
@@ -411,12 +408,7 @@ class RegulatoryDocumentSummarizer:
             new_words=len(new_text.split()),
         )
 
-        combined = (
-            "=== OLD VERSION ===\n"
-            f"{old_text}\n\n"
-            "=== NEW VERSION ===\n"
-            f"{new_text}"
-        )
+        combined = f"=== OLD VERSION ===\n{old_text}\n\n=== NEW VERSION ===\n{new_text}"
         docs = self._split_text(combined)
 
         if len(docs) <= 1:

@@ -4,12 +4,16 @@ from __future__ import annotations
 
 import re
 from typing import Any
+
 from pydantic import BaseModel, Field
+
 try:
     import structlog
+
     logger = structlog.get_logger(__name__)
 except ImportError:
     import logging
+
     logger = logging.getLogger(__name__)
 
 
@@ -67,12 +71,20 @@ class FaithfulnessMetric:
             # If more than 55% of significant content tokens are directly in context
             is_supported = (
                 ratio >= 0.55
-                or (any(" ".join(tokens[i : i + 3]) in context_lower for i in range(len(tokens) - 2)) if len(tokens) >= 3 else False)
+                or (
+                    any(
+                        " ".join(tokens[i : i + 3]) in context_lower for i in range(len(tokens) - 2)
+                    )
+                    if len(tokens) >= 3
+                    else False
+                )
                 or ratio > 0.50
             )
             if is_supported:
                 supported_count += 1
-            claim_verifications.append({"claim": claim, "overlap_ratio": round(ratio, 2), "supported": is_supported})
+            claim_verifications.append(
+                {"claim": claim, "overlap_ratio": round(ratio, 2), "supported": is_supported}
+            )
 
         score = round(supported_count / len(claims), 3)
         passed = score >= self.threshold

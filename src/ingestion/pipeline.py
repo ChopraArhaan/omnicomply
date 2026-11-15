@@ -11,7 +11,7 @@ import datetime as dt
 import mimetypes
 import uuid
 from pathlib import Path
-from typing import Any, Optional
+from typing import Any
 
 import structlog
 from pydantic import BaseModel, Field
@@ -43,20 +43,16 @@ class ProcessedDocument(BaseModel):
         default_factory=lambda: str(uuid.uuid4()),
         description="Unique identifier for this document.",
     )
-    source_type: str = Field(
-        ..., description="Detected input type (pdf, image, audio, text)."
-    )
+    source_type: str = Field(..., description="Detected input type (pdf, image, audio, text).")
     chunks: list[DocumentChunk] = Field(
         default_factory=list, description="Token-bounded document chunks."
     )
     entities: list[Entity] = Field(
         default_factory=list, description="Named entities extracted from the full text."
     )
-    metadata: dict[str, Any] = Field(
-        default_factory=dict, description="Document-level metadata."
-    )
+    metadata: dict[str, Any] = Field(default_factory=dict, description="Document-level metadata.")
     processed_at: str = Field(
-        default_factory=lambda: dt.datetime.now(dt.timezone.utc).isoformat(),
+        default_factory=lambda: dt.datetime.now(dt.UTC).isoformat(),
         description="ISO-8601 timestamp of processing.",
     )
 
@@ -73,7 +69,7 @@ class IngestionPipeline:
         result = await pipeline.ingest(Path("filing.pdf"))
     """
 
-    def __init__(self, settings: Optional[Settings] = None) -> None:
+    def __init__(self, settings: Settings | None = None) -> None:
         self._settings = settings or Settings()
         self._pdf_parser = PDFParser()
         self._ocr = OCRProcessor()
@@ -194,8 +190,7 @@ class IngestionPipeline:
                 return "pdf"
 
         raise ValueError(
-            f"Cannot determine file type for {file_path.name} "
-            f"(extension={ext}, mime={mime})"
+            f"Cannot determine file type for {file_path.name} (extension={ext}, mime={mime})"
         )
 
     # ── per-type processors ──────────────────────────────────────────────
@@ -241,7 +236,8 @@ class IngestionPipeline:
 
 # ── helper ───────────────────────────────────────────────────────────────────
 
-def _make_metadata(*, title: str, num_pages: int):  # noqa: ANN202
+
+def _make_metadata(*, title: str, num_pages: int):
     """Build a ``DocumentMetadata`` without importing at module level to avoid cycles."""
     from src.ingestion.pdf_parser import DocumentMetadata
 

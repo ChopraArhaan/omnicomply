@@ -16,12 +16,12 @@ from src.agents.state import AgentState
 
 __all__ = [
     "AgentState",
-    "RouterAgent",
-    "DocumentAgent",
     "AudioAgent",
-    "QueryAgent",
     "ComplianceAgent",
+    "DocumentAgent",
+    "QueryAgent",
     "ReportAgent",
+    "RouterAgent",
     "build_compliance_graph",
     "compliance_graph",
     "run_graph",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+
 from eval.metrics.faithfulness import MetricResult
 
 
@@ -33,13 +34,19 @@ class RegulatoryAccuracyMetric:
         if gt_citations:
             citation_match = len(gt_citations.intersection(ans_citations)) / len(gt_citations)
             scores.append(citation_match)
-            checks["citations"] = {"expected": list(gt_citations), "matched": list(gt_citations.intersection(ans_citations))}
+            checks["citations"] = {
+                "expected": list(gt_citations),
+                "matched": list(gt_citations.intersection(ans_citations)),
+            }
 
         # 2. Key numbers / deadlines check
         if gt_numerics:
             numeric_match = len(gt_numerics.intersection(ans_numerics)) / len(gt_numerics)
             scores.append(numeric_match)
-            checks["numeric_facts"] = {"expected": list(gt_numerics), "matched": list(gt_numerics.intersection(ans_numerics))}
+            checks["numeric_facts"] = {
+                "expected": list(gt_numerics),
+                "matched": list(gt_numerics.intersection(ans_numerics)),
+            }
 
         # 3. Textual overlap as baseline if no specific citations
         if not scores:

@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, patch
+
 from fastapi.testclient import TestClient
-import pytest
 
 from src.api.main import app
 
@@ -45,7 +45,15 @@ def test_query_ask_mocked():
     with patch("src.api.routes.query.run_graph", new_callable=AsyncMock) as mock_graph:
         mock_graph.return_value = {
             "response": "Under SEC Rule 10b5-1, a 90-day cooling off period is required.",
-            "citations": [{"source": "SEC Filing", "page": 1, "chunk_id": "c1", "score": 0.95, "origin": "hybrid"}],
+            "citations": [
+                {
+                    "source": "SEC Filing",
+                    "page": 1,
+                    "chunk_id": "c1",
+                    "score": 0.95,
+                    "origin": "hybrid",
+                }
+            ],
             "error": None,
         }
         payload = {"question": "What is the cooling off period under Rule 10b5-1?"}

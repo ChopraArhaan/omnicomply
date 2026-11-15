@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from src.analysis.risk_scorer import (
     ComplianceRiskScorer,
     RiskAssessment,
@@ -35,7 +36,9 @@ def test_score_document_high_penalty(risk_scorer: ComplianceRiskScorer):
     assert assessment.overall_score >= 40.0
     assert assessment.risk_level in [RiskLevel.HIGH, RiskLevel.CRITICAL]
     # Check that recommendation mentions penalties
-    assert any("penalty" in r.lower() or "liability" in r.lower() for r in assessment.recommendations)
+    assert any(
+        "penalty" in r.lower() or "liability" in r.lower() for r in assessment.recommendations
+    )
 
 
 def test_portfolio_risk_aggregation(risk_scorer: ComplianceRiskScorer):

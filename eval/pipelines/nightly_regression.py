@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 
-import json
-from pathlib import Path
 import sys
+from pathlib import Path
 
 from eval.evaluators.rag_evaluator import RAGEvaluator
 
@@ -31,12 +30,12 @@ Test Cases Evaluated: {report.total_test_cases}
 Overall Pass Rate: {report.overall_pass_rate:.1%}
 
 Metric Averages:
-- Faithfulness: {report.metric_averages.get('faithfulness', 0.0):.1%}
-- Answer Relevancy: {report.metric_averages.get('answer_relevancy', 0.0):.1%}
-- Context Precision: {report.metric_averages.get('context_precision', 0.0):.1%}
-- Regulatory Accuracy: {report.metric_averages.get('regulatory_accuracy', 0.0):.1%}
+- Faithfulness: {report.metric_averages.get("faithfulness", 0.0):.1%}
+- Answer Relevancy: {report.metric_averages.get("answer_relevancy", 0.0):.1%}
+- Context Precision: {report.metric_averages.get("context_precision", 0.0):.1%}
+- Regulatory Accuracy: {report.metric_averages.get("regulatory_accuracy", 0.0):.1%}
 
-Gate Status: {'PASSED' if report.gate_passed else 'REGRESSION DETECTED'}
+Gate Status: {"PASSED" if report.gate_passed else "REGRESSION DETECTED"}
 """
     with open(output_dir / "regression_summary.txt", "w", encoding="utf-8") as f:
         f.write(summary_text)

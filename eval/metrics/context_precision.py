@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+
 from eval.metrics.faithfulness import MetricResult
 
 
@@ -31,7 +32,7 @@ class ContextPrecisionMetric:
         relevant_at_k = []
 
         # Determine relevance of each chunk to the ground truth
-        for idx, chunk in enumerate(context_chunks):
+        for _idx, chunk in enumerate(context_chunks):
             chunk_tokens = set(re.findall(r"\b\w{3,}\b", chunk.lower()))
             overlap = len(gt_tokens.intersection(chunk_tokens)) / max(1, len(gt_tokens))
             is_relevant = overlap >= 0.40
@@ -45,7 +46,9 @@ class ContextPrecisionMetric:
                 running_relevant += 1
                 precisions.append(running_relevant / k)
 
-        score = round(sum(precisions) / max(1, running_relevant) if running_relevant > 0 else 0.0, 3)
+        score = round(
+            sum(precisions) / max(1, running_relevant) if running_relevant > 0 else 0.0, 3
+        )
         passed = score >= self.threshold
 
         return MetricResult(

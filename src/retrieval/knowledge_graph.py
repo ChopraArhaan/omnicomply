@@ -10,7 +10,7 @@ from __future__ import annotations
 from typing import Any
 
 import structlog
-from neo4j import AsyncGraphDatabase, AsyncDriver, AsyncSession
+from neo4j import AsyncDriver, AsyncGraphDatabase, AsyncSession
 from pydantic import BaseModel, Field
 
 logger = structlog.get_logger(__name__)
@@ -174,9 +174,7 @@ class KnowledgeGraphStore:
     async def connect(self) -> None:
         """Open the Neo4j async driver and create schema constraints."""
         logger.info("neo4j_connect", uri=self._uri)
-        self._driver = AsyncGraphDatabase.driver(
-            self._uri, auth=(self._user, self._password)
-        )
+        self._driver = AsyncGraphDatabase.driver(self._uri, auth=(self._user, self._password))
         await self._ensure_schema()
         logger.info("neo4j_connected")
 
@@ -370,9 +368,7 @@ class KnowledgeGraphStore:
     def _session(self) -> AsyncSession:
         """Return a new async session bound to the configured database."""
         if self._driver is None:
-            raise RuntimeError(
-                "KnowledgeGraphStore is not connected. Call connect() first."
-            )
+            raise RuntimeError("KnowledgeGraphStore is not connected. Call connect() first.")
         return self._driver.session(database=self._database)
 
     @staticmethod

@@ -2,13 +2,15 @@
 
 from __future__ import annotations
 
-from typing import Any
 from pydantic import BaseModel, Field
+
 try:
     import structlog
+
     logger = structlog.get_logger(__name__)
 except ImportError:
     import logging
+
     logger = logging.getLogger(__name__)
 
 
@@ -41,8 +43,8 @@ class LLMJudge:
         ground_truth: str,
     ) -> JudgmentResult:
         """Score answer across faithfulness, relevancy, and completeness."""
-        from eval.metrics.faithfulness import FaithfulnessMetric
         from eval.metrics.answer_relevancy import AnswerRelevancyMetric
+        from eval.metrics.faithfulness import FaithfulnessMetric
         from eval.metrics.regulatory_accuracy import RegulatoryAccuracyMetric
 
         faith_metric = FaithfulnessMetric().score(question, answer, context)
@@ -85,7 +87,17 @@ class LLMJudge:
 
         diff = judge_a.overall_score - judge_b.overall_score
         if abs(diff) < 0.05:
-            return PairwiseResult(winner="tie", confidence=0.5, explanation="Both outputs had comparable scores.")
+            return PairwiseResult(
+                winner="tie", confidence=0.5, explanation="Both outputs had comparable scores."
+            )
         if diff > 0:
-            return PairwiseResult(winner="model_a", confidence=round(0.5 + abs(diff) / 2, 2), explanation=f"Model A outperformed Model B by {diff:.2f}")
-        return PairwiseResult(winner="model_b", confidence=round(0.5 + abs(diff) / 2, 2), explanation=f"Model B outperformed Model A by {abs(diff):.2f}")
+            return PairwiseResult(
+                winner="model_a",
+                confidence=round(0.5 + abs(diff) / 2, 2),
+                explanation=f"Model A outperformed Model B by {diff:.2f}",
+            )
+        return PairwiseResult(
+            winner="model_b",
+            confidence=round(0.5 + abs(diff) / 2, 2),
+            explanation=f"Model B outperformed Model A by {abs(diff):.2f}",
+        )

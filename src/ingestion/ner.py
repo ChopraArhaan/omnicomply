@@ -9,7 +9,7 @@ tuned for regulatory / legal text.
 from __future__ import annotations
 
 import re
-from typing import Literal
+from typing import ClassVar, Literal
 
 import structlog
 from pydantic import BaseModel, Field
@@ -38,9 +38,7 @@ class Entity(BaseModel):
     label: EntityLabel = Field(..., description="Semantic category.")
     start: int = Field(..., ge=0, description="Character offset start (inclusive).")
     end: int = Field(..., ge=0, description="Character offset end (exclusive).")
-    confidence: float = Field(
-        ..., ge=0.0, le=1.0, description="Extraction confidence score."
-    )
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Extraction confidence score.")
 
 
 # ── NER Extractor ────────────────────────────────────────────────────────────
@@ -97,7 +95,7 @@ class LegalNERExtractor:
     )
 
     # Map generic NER labels → legal taxonomy
-    _LABEL_MAP: dict[str, EntityLabel] = {
+    _LABEL_MAP: ClassVar[dict[str, EntityLabel]] = {
         "PER": "PERSON",
         "B-PER": "PERSON",
         "I-PER": "PERSON",
@@ -159,7 +157,7 @@ class LegalNERExtractor:
 
     # ── private helpers ──────────────────────────────────────────────────
 
-    def _load_pipeline(self):  # noqa: ANN202
+    def _load_pipeline(self):
         """Load the HuggingFace token-classification pipeline."""
         try:
             from transformers import pipeline as hf_pipeline
@@ -178,9 +176,7 @@ class LegalNERExtractor:
             )
             return None
 
-    def _merge_subword_entities(
-        self, raw_entities: list[dict], text: str
-    ) -> list[Entity]:
+    def _merge_subword_entities(self, raw_entities: list[dict], text: str) -> list[Entity]:
         """Merge BPE/WordPiece sub-word tokens into whole entities.
 
         The ``transformers`` pipeline with ``aggregation_strategy="none"``

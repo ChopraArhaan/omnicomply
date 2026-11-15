@@ -11,12 +11,12 @@ from __future__ import annotations
 import json
 import time
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import numpy as np
 import structlog
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from redis.asyncio import Redis
 from redis.commands.search.field import TagField, TextField, VectorField
 from redis.commands.search.indexDefinition import IndexDefinition, IndexType
@@ -52,7 +52,7 @@ class CacheStats(BaseModel):
 
     Attributes:
         total_entries: Number of cached entries.
-        hit_rate: Ratio of cache hits to total lookups (0.0–1.0).
+        hit_rate: Ratio of cache hits to total lookups (0.0-1.0).
         avg_latency: Average cache-lookup latency in milliseconds.
     """
 
@@ -152,7 +152,9 @@ class SemanticCache:
     # Public API
     # ------------------------------------------------------------------
 
-    async def get(self, query: str, query_embedding: list[float] | None = None) -> CacheResult | None:
+    async def get(
+        self, query: str, query_embedding: list[float] | None = None
+    ) -> CacheResult | None:
         """Look up a semantically similar cached query.
 
         Args:
@@ -177,7 +179,7 @@ class SemanticCache:
             query_blob = np.array(query_embedding, dtype=np.float32).tobytes()
 
             redis_query = (
-                Query(f"*=>[KNN 1 @embedding $vec AS score]")
+                Query("*=>[KNN 1 @embedding $vec AS score]")
                 .sort_by("score")
                 .return_fields("query", "response", "cached_at", "score")
                 .dialect(2)
@@ -212,7 +214,9 @@ class SemanticCache:
             # Cache hit!
             await self._update_stats(hit=True, latency_ms=latency_ms)
 
-            cached_at_str = doc.cached_at if isinstance(doc.cached_at, str) else doc.cached_at.decode()  # type: ignore[union-attr]
+            cached_at_str = (
+                doc.cached_at if isinstance(doc.cached_at, str) else doc.cached_at.decode()
+            )  # type: ignore[union-attr]
 
             logger.info(
                 "semantic_cache_hit",
@@ -221,8 +225,12 @@ class SemanticCache:
             )
 
             return CacheResult(
-                response=doc.response.decode() if isinstance(doc.response, bytes) else str(doc.response),  # type: ignore[union-attr]
-                original_query=doc.query.decode() if isinstance(doc.query, bytes) else str(doc.query),  # type: ignore[union-attr]
+                response=doc.response.decode()
+                if isinstance(doc.response, bytes)
+                else str(doc.response),  # type: ignore[union-attr]
+                original_query=doc.query.decode()
+                if isinstance(doc.query, bytes)
+                else str(doc.query),  # type: ignore[union-attr]
                 similarity_score=similarity,
                 cached_at=datetime.fromisoformat(cached_at_str),
             )
@@ -238,7 +246,7 @@ class SemanticCache:
         response: str,
         metadata: dict[str, Any] | None = None,
     ) -> None:
-        """Store a query–response pair in the cache.
+        """Store a query-response pair in the cache.
 
         Args:
             query: The original query text.
@@ -250,7 +258,7 @@ class SemanticCache:
 
         entry_id = str(uuid.uuid4())
         key = f"{_KEY_PREFIX}{entry_id}"
-        now = datetime.now(timezone.utc).isoformat()
+        now = datetime.now(UTC).isoformat()
 
         embedding_list = [float(v) for v in query_embedding]
 
@@ -338,6 +346,4 @@ class SemanticCache:
     def _assert_connected(self) -> None:
         """Raise if the Redis client has not been initialised."""
         if self._redis is None:
-            raise RuntimeError(
-                "SemanticCache is not connected. Call connect() first."
-            )
+            raise RuntimeError("SemanticCache is not connected. Call connect() first.")

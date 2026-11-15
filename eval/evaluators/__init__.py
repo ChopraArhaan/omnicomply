@@ -8,9 +8,9 @@ from eval.evaluators.llm_as_judge import (
 from eval.evaluators.rag_evaluator import EvalReport, RAGEvaluator
 
 __all__ = [
-    "LLMJudge",
+    "EvalReport",
     "JudgmentResult",
+    "LLMJudge",
     "PairwiseResult",
     "RAGEvaluator",
-    "EvalReport",
 ]

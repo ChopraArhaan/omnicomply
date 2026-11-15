@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+
 from eval.metrics.faithfulness import MetricResult
 
 
@@ -23,7 +24,12 @@ class AnswerRelevancyMetric:
             )
 
         # Check penalty for non-committal or evasive answers
-        evasive_phrases = ["i don't know", "cannot determine", "insufficient context", "unclear from"]
+        evasive_phrases = [
+            "i don't know",
+            "cannot determine",
+            "insufficient context",
+            "unclear from",
+        ]
         is_evasive = any(p in answer.lower() for p in evasive_phrases)
         if is_evasive and len(answer.split()) < 15:
             return MetricResult(
@@ -37,6 +43,7 @@ class AnswerRelevancyMetric:
         # Try dense sentence-similarity if model is cached/available
         try:
             from sentence_transformers import SentenceTransformer, util
+
             model = SentenceTransformer("all-MiniLM-L6-v2")
             emb_q = model.encode(question, convert_to_tensor=True)
             emb_a = model.encode(answer, convert_to_tensor=True)
@@ -60,7 +67,20 @@ class AnswerRelevancyMetric:
 
         q_words = set(re.findall(r"\b\w{3,}\b", q_clean))
         a_words = set(re.findall(r"\b\w{3,}\b", a_clean))
-        stop_words = {"what", "when", "where", "which", "under", "does", "have", "with", "from", "that", "this", "each"}
+        stop_words = {
+            "what",
+            "when",
+            "where",
+            "which",
+            "under",
+            "does",
+            "have",
+            "with",
+            "from",
+            "that",
+            "this",
+            "each",
+        }
         q_intent = q_words - stop_words or q_words
 
         token_overlap = len(q_intent.intersection(a_words)) / max(1, len(q_intent))
@@ -71,7 +91,11 @@ class AnswerRelevancyMetric:
 
         q_ngrams = get_ngrams(q_clean)
         a_ngrams = get_ngrams(a_clean)
-        ngram_sim = len(q_ngrams.intersection(a_ngrams)) / max(1, len(q_ngrams.union(a_ngrams))) if q_ngrams else 0.5
+        ngram_sim = (
+            len(q_ngrams.intersection(a_ngrams)) / max(1, len(q_ngrams.union(a_ngrams)))
+            if q_ngrams
+            else 0.5
+        )
 
         # Substantial non-empty answers to direct regulatory queries receive calibrated relevancy
         length_factor = min(1.0, len(answer.split()) / 8.0)

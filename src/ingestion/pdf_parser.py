@@ -47,9 +47,7 @@ class ParsedDocument(BaseModel):
     """Fully parsed representation of a document."""
 
     content: str = Field(default="", description="Concatenated full-text content.")
-    pages: list[PageContent] = Field(
-        default_factory=list, description="Per-page content."
-    )
+    pages: list[PageContent] = Field(default_factory=list, description="Per-page content.")
     metadata: DocumentMetadata = Field(default_factory=DocumentMetadata)
 
 
@@ -144,9 +142,7 @@ class PDFParser:
             logger.info("llama_index not installed; will use PyPDF2 fallback.")
             return False
 
-    def _parse_with_llama(
-        self, file_path: Path, *, layout_aware: bool = False
-    ) -> ParsedDocument:
+    def _parse_with_llama(self, file_path: Path, *, layout_aware: bool = False) -> ParsedDocument:
         """Use llama_index's PDFReader for rich extraction."""
         from llama_index.readers.file import PDFReader
 

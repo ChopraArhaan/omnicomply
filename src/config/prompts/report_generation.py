@@ -36,7 +36,7 @@ AUDIT_REPORT_TEMPLATE: str = """\
 
 ## 1. Executive Summary
 
-Provide a high-level overview (200–300 words) covering:
+Provide a high-level overview (200-300 words) covering:
 - The purpose and scope of this audit.
 - The number of findings by risk level.
 - Overall compliance posture (Compliant / Partially Compliant / Non-Compliant).

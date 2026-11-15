@@ -13,13 +13,16 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import asynccontextmanager
-from typing import Any, AsyncIterator
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.config.settings import Settings
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncIterator
 
 # ---------------------------------------------------------------------------
 # Structured logging bootstrap
@@ -57,6 +60,7 @@ def get_state() -> dict[str, Any]:
 # ---------------------------------------------------------------------------
 # Lifespan
 # ---------------------------------------------------------------------------
+
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
@@ -135,16 +139,16 @@ def create_app() -> FastAPI:
     )
 
     # ---- Custom middleware ----
-    from src.api.middleware.logging_middleware import RequestLoggingMiddleware
     from src.api.middleware.cost_tracking import CostTrackingMiddleware
+    from src.api.middleware.logging_middleware import RequestLoggingMiddleware
 
     app.add_middleware(RequestLoggingMiddleware)
     app.add_middleware(CostTrackingMiddleware, redis_url=settings.redis_url)
 
     # ---- Routers ----
+    from src.api.routes.analysis import router as analysis_router
     from src.api.routes.documents import router as documents_router
     from src.api.routes.query import router as query_router
-    from src.api.routes.analysis import router as analysis_router
 
     app.include_router(documents_router)
     app.include_router(query_router)

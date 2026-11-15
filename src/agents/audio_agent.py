@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
 import structlog
-from src.agents.state import AgentState
+
 from src.ingestion.audio_processor import AudioProcessor, Transcript
 from src.ingestion.chunker import AdaptiveChunker
 from src.ingestion.ner import LegalNERExtractor
 from src.retrieval.embeddings import EmbeddingService
-from src.retrieval.vector_store import DocumentChunk as VectorChunk, PgVectorStore
+from src.retrieval.vector_store import DocumentChunk as VectorChunk
+from src.retrieval.vector_store import PgVectorStore
+
+if TYPE_CHECKING:
+    from src.agents.state import AgentState
 
 logger = structlog.get_logger(__name__)
 
@@ -55,6 +59,7 @@ class AudioAgent:
 
             # 3. Chunk transcript with timestamps preserved in metadata
             from src.ingestion.pdf_parser import PageContent, ParsedDocument
+
             fake_doc = ParsedDocument(
                 content=transcript.text,
                 pages=[PageContent(page_num=1, text=transcript.text)],

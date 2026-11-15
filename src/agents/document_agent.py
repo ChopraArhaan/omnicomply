@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
 import structlog
-from src.agents.state import AgentState
+
 from src.ingestion.pipeline import IngestionPipeline, ProcessedDocument
 from src.retrieval.embeddings import EmbeddingService
-from src.retrieval.knowledge_graph import Entity as GraphEntity, KnowledgeGraphStore
-from src.retrieval.vector_store import DocumentChunk as VectorChunk, PgVectorStore
+from src.retrieval.knowledge_graph import Entity as GraphEntity
+from src.retrieval.knowledge_graph import KnowledgeGraphStore
+from src.retrieval.vector_store import DocumentChunk as VectorChunk
+from src.retrieval.vector_store import PgVectorStore
+
+if TYPE_CHECKING:
+    from src.agents.state import AgentState
 
 logger = structlog.get_logger(__name__)
 

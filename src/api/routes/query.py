@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import time
-from typing import Any, AsyncGenerator
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from fastapi import APIRouter, HTTPException, Query
@@ -12,6 +12,9 @@ from sse_starlette.sse import EventSourceResponse
 
 from src.agents.graph import run_graph
 
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator
+
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1/query", tags=["Compliance Query"])
@@ -19,6 +22,7 @@ router = APIRouter(prefix="/api/v1/query", tags=["Compliance Query"])
 
 class QueryRequest(BaseModel):
     """Payload for natural language regulatory queries."""
+
     question: str = Field(..., description="Compliance question or query string")
     domain: str | None = Field(None, description="Optional domain filter (e.g. SEC, FDA)")
     strategy: str = Field("hybrid", description="Retrieval strategy: hybrid, dense, or sparse")
@@ -35,6 +39,7 @@ class Citation(BaseModel):
 
 class QueryResponse(BaseModel):
     """Structured compliance answer with verifiable citations."""
+
     question: str
     answer: str
     citations: list[Citation] = Field(default_factory=list)
@@ -91,7 +96,7 @@ async def ask_question(payload: QueryRequest) -> QueryResponse:
         raise
     except Exception as exc:
         logger.error("api_query_failed", error=str(exc))
-        raise HTTPException(status_code=500, detail=f"Query execution error: {exc}")
+        raise HTTPException(status_code=500, detail=f"Query execution error: {exc}") from exc
 
 
 @router.post("/ask/stream")
@@ -100,7 +105,7 @@ async def ask_question_stream(payload: QueryRequest) -> EventSourceResponse:
 
     async def event_generator() -> AsyncGenerator[dict[str, str], None]:
         yield {"event": "status", "data": "Retrieving regulatory context..."}
-        
+
         graph_input = {
             "query": payload.question,
             "input_type": "query",

@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from unittest.mock import AsyncMock, MagicMock
+
 import pytest
 
-from src.retrieval.semantic_cache import CacheResult, CacheStats, SemanticCache
+from src.retrieval.semantic_cache import CacheStats, SemanticCache
 
 
 @pytest.fixture

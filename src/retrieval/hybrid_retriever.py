@@ -8,21 +8,22 @@ Fusion, applies cross-encoder reranking, and caches responses semantically.
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import json
 import time
-from enum import Enum
-from typing import Any
+from enum import StrEnum
+from typing import TYPE_CHECKING, Any
 
 import structlog
 from pydantic import BaseModel, Field
 from rank_bm25 import BM25Okapi
 
-from src.retrieval.embeddings import EmbeddingService
-from src.retrieval.knowledge_graph import KnowledgeGraphStore
-from src.retrieval.reranker import Reranker
-from src.retrieval.semantic_cache import SemanticCache
 from src.retrieval.vector_store import PgVectorStore, SearchResult
+
+if TYPE_CHECKING:
+    from src.retrieval.embeddings import EmbeddingService
+    from src.retrieval.knowledge_graph import KnowledgeGraphStore
+    from src.retrieval.reranker import Reranker
+    from src.retrieval.semantic_cache import SemanticCache
 
 logger = structlog.get_logger(__name__)
 
@@ -32,7 +33,7 @@ logger = structlog.get_logger(__name__)
 # ---------------------------------------------------------------------------
 
 
-class RetrievalSource(str, Enum):
+class RetrievalSource(StrEnum):
     """Enumeration of retrieval sources."""
 
     DENSE = "dense"
@@ -113,7 +114,7 @@ class BM25Index:
 
         # Pair scores with documents and sort.
         scored = sorted(
-            zip(scores, self._documents),
+            zip(scores, self._documents, strict=False),
             key=lambda x: x[0],
             reverse=True,
         )
@@ -322,7 +323,11 @@ class HybridRetriever:
 
         # Default: hybrid — run all three in parallel.
         dense_task = self._dense_search(query_embedding, top_k, filters)
-        sparse_task = asyncio.coroutine(lambda: self._sparse_search(query, top_k))() if False else asyncio.get_event_loop().run_in_executor(None, self._sparse_search, query, top_k)
+        sparse_task = (
+            asyncio.coroutine(lambda: self._sparse_search(query, top_k))()
+            if False
+            else asyncio.get_event_loop().run_in_executor(None, self._sparse_search, query, top_k)
+        )
         graph_task = self._graph_search(query, top_k)
 
         dense_results, sparse_results, graph_results = await asyncio.gather(
@@ -395,21 +400,72 @@ class HybridRetriever:
         """Extract key terms from the query and traverse the knowledge graph."""
         # Simple heuristic: use the longest non-stopword tokens as entity
         # candidates.  A production system would use an NER model here.
-        _STOPWORDS = {
-            "the", "a", "an", "is", "are", "was", "were", "be", "been",
-            "being", "have", "has", "had", "do", "does", "did", "will",
-            "would", "could", "should", "may", "might", "shall", "can",
-            "of", "in", "to", "for", "with", "on", "at", "from", "by",
-            "about", "as", "into", "through", "during", "before", "after",
-            "and", "but", "or", "nor", "not", "so", "yet", "both",
-            "what", "which", "who", "whom", "this", "that", "these",
-            "those", "it", "its", "how", "when", "where", "why",
+        stopwords = {
+            "the",
+            "a",
+            "an",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "shall",
+            "can",
+            "of",
+            "in",
+            "to",
+            "for",
+            "with",
+            "on",
+            "at",
+            "from",
+            "by",
+            "about",
+            "as",
+            "into",
+            "through",
+            "during",
+            "before",
+            "after",
+            "and",
+            "but",
+            "or",
+            "nor",
+            "not",
+            "so",
+            "yet",
+            "both",
+            "what",
+            "which",
+            "who",
+            "whom",
+            "this",
+            "that",
+            "these",
+            "those",
+            "it",
+            "its",
+            "how",
+            "when",
+            "where",
+            "why",
         }
 
-        tokens = [
-            t for t in query.split()
-            if t.lower() not in _STOPWORDS and len(t) > 2
-        ]
+        tokens = [t for t in query.split() if t.lower() not in stopwords and len(t) > 2]
         tokens.sort(key=len, reverse=True)
         entity_candidates = tokens[:3]  # top 3 longest tokens
 

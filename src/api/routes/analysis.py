@@ -50,7 +50,7 @@ async def assess_risk(payload: RiskAssessmentRequest) -> RiskAssessment:
         return assessment
     except Exception as exc:
         logger.error("risk_assessment_failed", error=str(exc))
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.post("/semantic-diff", response_model=SemanticDiff)
@@ -64,7 +64,7 @@ async def compare_regulations(payload: SemanticDiffRequest) -> SemanticDiff:
         return diff_result
     except Exception as exc:
         logger.error("semantic_diff_failed", error=str(exc))
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.post("/forecast")
@@ -82,7 +82,7 @@ async def forecast_regulatory_trends(payload: ForecastRequest) -> dict[str, Any]
         }
     except Exception as exc:
         logger.error("forecasting_failed", error=str(exc))
-        raise HTTPException(status_code=500, detail=str(exc))
+        raise HTTPException(status_code=500, detail=str(exc)) from exc
 
 
 @router.get("/risk-dashboard")

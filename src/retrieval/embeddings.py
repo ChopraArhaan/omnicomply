@@ -7,11 +7,13 @@ using the BGE-M3 model (or any compatible sentence-transformer model).
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import TYPE_CHECKING
 
-import numpy as np
 import structlog
 from sentence_transformers import SentenceTransformer
+
+if TYPE_CHECKING:
+    import numpy as np
 
 logger = structlog.get_logger(__name__)
 

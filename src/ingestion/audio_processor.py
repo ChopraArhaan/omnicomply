@@ -31,31 +31,23 @@ class Segment(BaseModel):
     start: float = Field(..., ge=0.0, description="Segment start time in seconds.")
     end: float = Field(..., ge=0.0, description="Segment end time in seconds.")
     text: str = Field(..., description="Transcribed text for this segment.")
-    confidence: float = Field(
-        default=1.0, ge=0.0, le=1.0, description="Average token probability."
-    )
+    confidence: float = Field(default=1.0, ge=0.0, le=1.0, description="Average token probability.")
 
 
 class Transcript(BaseModel):
     """Full transcription result."""
 
     text: str = Field(default="", description="Complete transcribed text.")
-    segments: list[Segment] = Field(
-        default_factory=list, description="Time-aligned segments."
-    )
+    segments: list[Segment] = Field(default_factory=list, description="Time-aligned segments.")
     language: str = Field(default="en", description="Detected language code.")
-    duration_seconds: float = Field(
-        default=0.0, ge=0.0, description="Total audio duration."
-    )
+    duration_seconds: float = Field(default=0.0, ge=0.0, description="Total audio duration.")
 
 
 class AudioClassification(BaseModel):
     """Classification result for an audio file."""
 
     label: str = Field(..., description="Predicted class label.")
-    confidence: float = Field(
-        ..., ge=0.0, le=1.0, description="Classification confidence."
-    )
+    confidence: float = Field(..., ge=0.0, le=1.0, description="Classification confidence.")
 
 
 # ── Audio Processor ─────────────────────────────────────────────────────────
@@ -114,10 +106,10 @@ class AudioProcessor:
 
         segments: list[Segment] = []
         for seg in result.get("segments", []):
-            # Whisper provides avg_logprob; convert to a 0–1 confidence
+            # Whisper provides avg_logprob; convert to a 0-1 confidence
             avg_logprob = seg.get("avg_logprob", 0.0)
             # Clamp e^logprob to [0, 1]
-            confidence = min(max(2.0 ** avg_logprob, 0.0), 1.0)
+            confidence = min(max(2.0**avg_logprob, 0.0), 1.0)
 
             segments.append(
                 Segment(
@@ -242,10 +234,14 @@ class AudioProcessor:
         try:
             subprocess.run(
                 [
-                    "ffmpeg", "-y",
-                    "-i", str(audio_path),
-                    "-ar", "16000",
-                    "-ac", "1",
+                    "ffmpeg",
+                    "-y",
+                    "-i",
+                    str(audio_path),
+                    "-ar",
+                    "16000",
+                    "-ac",
+                    "1",
                     str(wav_path),
                 ],
                 capture_output=True,
@@ -255,11 +251,10 @@ class AudioProcessor:
             return wav_path
         except (FileNotFoundError, subprocess.CalledProcessError) as exc:
             raise RuntimeError(
-                "Cannot convert audio to WAV.  Install pydub (pip install pydub) "
-                "or ffmpeg."
+                "Cannot convert audio to WAV.  Install pydub (pip install pydub) or ffmpeg."
             ) from exc
 
-    def _load_whisper(self):  # noqa: ANN202
+    def _load_whisper(self):
         """Load the Whisper model."""
         try:
             import whisper
@@ -278,7 +273,7 @@ class AudioProcessor:
             )
             return None
 
-    def _load_classifier(self):  # noqa: ANN202
+    def _load_classifier(self):
         """Load the HuggingFace audio-classification pipeline."""
         try:
             from transformers import pipeline as hf_pipeline
@@ -287,9 +282,7 @@ class AudioProcessor:
                 "audio-classification",
                 model=self._classifier_model_name,
             )
-            logger.info(
-                "Audio classifier loaded", model=self._classifier_model_name
-            )
+            logger.info("Audio classifier loaded", model=self._classifier_model_name)
             return pipe
         except Exception:
             logger.warning(

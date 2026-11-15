@@ -3,16 +3,19 @@
 from __future__ import annotations
 
 import time
-from typing import Any
+from typing import TYPE_CHECKING
 
 import structlog
-from src.agents.state import AgentState
+
 from src.config.prompts.compliance_qa import (
     COMPLIANCE_QA_SYSTEM_PROMPT,
     COMPLIANCE_QA_USER_TEMPLATE,
 )
 from src.config.settings import Settings
 from src.retrieval.hybrid_retriever import HybridRetriever, RetrievalResult
+
+if TYPE_CHECKING:
+    from src.agents.state import AgentState
 
 logger = structlog.get_logger(__name__)
 
@@ -80,7 +83,9 @@ class QueryAgent:
 
             # 4. Synthesize Answer using LLM
             formatted_prompt = COMPLIANCE_QA_USER_TEMPLATE.format(
-                context=context_str if context_str else "No direct matches found in current corpus.",
+                context=context_str
+                if context_str
+                else "No direct matches found in current corpus.",
                 question=query,
             )
 
@@ -104,7 +109,9 @@ class QueryAgent:
             }
             state["next_step"] = "end"
 
-            logger.info("query_agent_synthesis_complete", latency_ms=latency_ms, citations=len(citations))
+            logger.info(
+                "query_agent_synthesis_complete", latency_ms=latency_ms, citations=len(citations)
+            )
         except Exception as exc:
             logger.error("query_agent_failed", error=str(exc))
             state["error"] = f"Query processing failed: {exc}"
@@ -131,7 +138,10 @@ class QueryAgent:
         if provider == "openai" and self.settings.llm.api_key:
             try:
                 from openai import AsyncOpenAI
-                client = AsyncOpenAI(api_key=self.settings.llm.api_key, base_url=self.settings.llm.base_url or None)
+
+                client = AsyncOpenAI(
+                    api_key=self.settings.llm.api_key, base_url=self.settings.llm.base_url or None
+                )
                 resp = await client.chat.completions.create(
                     model=self.settings.llm.model_name,
                     messages=[

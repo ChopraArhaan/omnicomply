@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import json
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any
 
 import asyncpg
@@ -159,18 +159,20 @@ class PgVectorStore:
                 token_count = EXCLUDED.token_count
         """
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         records: list[tuple[Any, ...]] = []
-        for chunk, emb in zip(chunks, embeddings):
-            records.append((
-                uuid.UUID(chunk.chunk_id),
-                uuid.UUID(chunk.document_id),
-                chunk.content,
-                _format_vector(emb),
-                json.dumps(chunk.metadata),
-                chunk.token_count,
-                now,
-            ))
+        for chunk, emb in zip(chunks, embeddings, strict=False):
+            records.append(
+                (
+                    uuid.UUID(chunk.chunk_id),
+                    uuid.UUID(chunk.document_id),
+                    chunk.content,
+                    _format_vector(emb),
+                    json.dumps(chunk.metadata),
+                    chunk.token_count,
+                    now,
+                )
+            )
 
         async with self._pool.acquire() as conn:  # type: ignore[union-attr]
             await conn.executemany(query, records)
@@ -258,7 +260,9 @@ class PgVectorStore:
                 chunk_id=str(row["id"]),
                 content=row["content"],
                 score=float(row["score"]),
-                metadata=json.loads(row["metadata"]) if isinstance(row["metadata"], str) else dict(row["metadata"]),
+                metadata=json.loads(row["metadata"])
+                if isinstance(row["metadata"], str)
+                else dict(row["metadata"]),
             )
             for row in rows
         ]
@@ -307,9 +311,7 @@ class PgVectorStore:
     def _assert_connected(self) -> None:
         """Raise if the connection pool has not been initialised."""
         if self._pool is None:
-            raise RuntimeError(
-                "PgVectorStore is not connected. Call connect() first."
-            )
+            raise RuntimeError("PgVectorStore is not connected. Call connect() first.")
 
 
 def _format_vector(vec: list[float]) -> str:

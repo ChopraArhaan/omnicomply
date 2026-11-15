@@ -4,11 +4,14 @@ from __future__ import annotations
 
 import mimetypes
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING
 
 import structlog
-from src.agents.state import AgentState
+
 from src.analysis.classifier import RegulatoryClassifier
+
+if TYPE_CHECKING:
+    from src.agents.state import AgentState
 
 logger = structlog.get_logger(__name__)
 

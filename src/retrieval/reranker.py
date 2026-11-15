@@ -1,14 +1,13 @@
 """Cross-encoder reranker for improving retrieval precision.
 
 Takes an initial set of candidate search results and re-scores them using
-a cross-encoder model that jointly encodes the query–document pair, producing
+a cross-encoder model that jointly encodes the query-document pair, producing
 a more accurate relevance estimate than bi-encoder similarity alone.
 """
 
 from __future__ import annotations
 
 import time
-from typing import Any
 
 import structlog
 from sentence_transformers import CrossEncoder
@@ -28,7 +27,7 @@ class Reranker:
         model_name: HuggingFace model identifier for the cross-encoder.
         device: Torch device string (``None`` for auto-detect).
         batch_size: Batch size for cross-encoder inference.
-        max_length: Maximum token length per query–document pair.
+        max_length: Maximum token length per query-document pair.
     """
 
     def __init__(
@@ -103,15 +102,13 @@ class Reranker:
         start = time.perf_counter()
 
         # Build (query, document) pairs for the cross-encoder.
-        pairs: list[list[str]] = [
-            [query, doc.content] for doc in documents
-        ]
+        pairs: list[list[str]] = [[query, doc.content] for doc in documents]
 
         # Score in batches for efficiency.
         scores = self._batch_predict(pairs)
 
         # Pair each document with its reranker score and sort descending.
-        scored: list[tuple[float, SearchResult]] = list(zip(scores, documents))
+        scored: list[tuple[float, SearchResult]] = list(zip(scores, documents, strict=False))
         scored.sort(key=lambda x: x[0], reverse=True)
 
         # Take top_k and update the score field.

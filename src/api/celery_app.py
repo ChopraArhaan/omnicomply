@@ -6,8 +6,8 @@ import asyncio
 from pathlib import Path
 from typing import Any
 
-from celery import Celery
 import structlog
+from celery import Celery
 
 from src.config.settings import Settings
 
@@ -32,7 +32,9 @@ celery_app.conf.update(
 
 
 @celery_app.task(bind=True, name="tasks.ingest_document")
-def ingest_document_task(self, file_path_str: str, document_id: str | None = None) -> dict[str, Any]:
+def ingest_document_task(
+    self, file_path_str: str, document_id: str | None = None
+) -> dict[str, Any]:
     """Execute full ingestion pipeline in background Celery worker."""
     from src.ingestion.pipeline import IngestionPipeline
 

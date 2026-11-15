@@ -132,7 +132,7 @@ class OCRProcessor:
 
     # ── private helpers ──────────────────────────────────────────────────
 
-    def _load_pipeline(self):  # noqa: ANN202
+    def _load_pipeline(self):
         """Load the HuggingFace image-to-text pipeline lazily."""
         try:
             from transformers import pipeline as hf_pipeline
@@ -214,6 +214,5 @@ class OCRProcessor:
             logger.warning("PyMuPDF failed", error=str(exc))
 
         raise RuntimeError(
-            "Cannot convert PDF to images.  Install either "
-            "`pdf2image` (with poppler) or `PyMuPDF`."
+            "Cannot convert PDF to images.  Install either `pdf2image` (with poppler) or `PyMuPDF`."
         )

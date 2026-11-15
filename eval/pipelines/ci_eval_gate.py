@@ -78,10 +78,14 @@ def main() -> int:
         print(f"{metric_name:<25} | {score:<10.1%} | {thresh:<10.1%} | {status_str}")
 
     print("-" * 65)
-    print(f"Overall Pass Rate: {report.overall_pass_rate:.1%} ({report.total_test_cases} test cases)")
+    print(
+        f"Overall Pass Rate: {report.overall_pass_rate:.1%} ({report.total_test_cases} test cases)"
+    )
 
     if args.strict and not all_passed:
-        print("\n❌ CI GATE FAILED: One or more evaluation metrics fell below production thresholds.")
+        print(
+            "\n❌ CI GATE FAILED: One or more evaluation metrics fell below production thresholds."
+        )
         return 1
 
     print("\n✅ CI GATE PASSED: All production RAG metrics meet or exceed quality thresholds.")

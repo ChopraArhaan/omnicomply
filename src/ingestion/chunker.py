@@ -10,12 +10,13 @@ from __future__ import annotations
 
 import re
 import uuid
-from typing import Optional
+from typing import TYPE_CHECKING
 
 import structlog
 from pydantic import BaseModel, Field
 
-from src.ingestion.pdf_parser import ParsedDocument
+if TYPE_CHECKING:
+    from src.ingestion.pdf_parser import ParsedDocument
 
 logger = structlog.get_logger(__name__)
 
@@ -27,13 +28,9 @@ class ChunkMetadata(BaseModel):
     """Provenance metadata attached to every chunk."""
 
     source: str = Field(default="", description="Origin file path or URL.")
-    page_num: Optional[int] = Field(
-        default=None, description="Page number the chunk originated from."
-    )
-    chunk_index: int = Field(
-        default=0, description="Sequential index within the document."
-    )
-    parent_chunk_id: Optional[str] = Field(
+    page_num: int | None = Field(default=None, description="Page number the chunk originated from.")
+    chunk_index: int = Field(default=0, description="Sequential index within the document.")
+    parent_chunk_id: str | None = Field(
         default=None,
         description="UUID of a parent chunk if this is a sub-chunk.",
     )
@@ -48,9 +45,7 @@ class DocumentChunk(BaseModel):
     )
     content: str = Field(..., description="Chunk text.")
     metadata: ChunkMetadata = Field(default_factory=ChunkMetadata)
-    token_count: int = Field(
-        default=0, ge=0, description="Token count (cl100k_base)."
-    )
+    token_count: int = Field(default=0, ge=0, description="Token count (cl100k_base).")
 
 
 # ── Chunker ──────────────────────────────────────────────────────────────────
@@ -69,11 +64,11 @@ class AdaptiveChunker:
     # Patterns for structural detection
     _SECTION_HEADING_RE = re.compile(
         r"^(?:"
-        r"(?:#{1,6}\s+.+)"               # Markdown headings
-        r"|(?:SECTION\s+\d+)"            # SECTION 1, SECTION 2 …
-        r"|(?:§\s*\d+[\.\d]*)"           # § 240.10b-5
-        r"|(?:Article\s+[IVXLCDM\d]+)"   # Article III
-        r"|(?:\d+\.\d+(?:\.\d+)*\s+[A-Z])" # 1.2.3 Title
+        r"(?:#{1,6}\s+.+)"  # Markdown headings
+        r"|(?:SECTION\s+\d+)"  # SECTION 1, SECTION 2 …
+        r"|(?:§\s*\d+[\.\d]*)"  # § 240.10b-5
+        r"|(?:Article\s+[IVXLCDM\d]+)"  # Article III
+        r"|(?:\d+\.\d+(?:\.\d+)*\s+[A-Z])"  # 1.2.3 Title
         r")",
         re.MULTILINE,
     )
@@ -127,9 +122,7 @@ class AdaptiveChunker:
 
             # Split sections into token-bounded chunks with overlap
             for section in sections:
-                section_chunks = self._split_with_overlap(
-                    section, chunk_size, chunk_overlap
-                )
+                section_chunks = self._split_with_overlap(section, chunk_size, chunk_overlap)
                 for chunk_text in section_chunks:
                     token_count = self._count_tokens(chunk_text)
                     all_chunks.append(
@@ -235,9 +228,7 @@ class AdaptiveChunker:
 
         return tables, "\n".join(prose_lines)
 
-    def _split_with_overlap(
-        self, text: str, chunk_size: int, chunk_overlap: int
-    ) -> list[str]:
+    def _split_with_overlap(self, text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
         """Split text into token-bounded chunks with overlap.
 
         Splits on paragraph boundaries (double newline) first, then on single
@@ -298,7 +289,7 @@ class AdaptiveChunker:
                     overlap_units.insert(0, prev_unit)
                     overlap_tokens += prev_tokens
 
-                current_units = overlap_units + [unit]
+                current_units = [*overlap_units, unit]
                 current_tokens = overlap_tokens + unit_tokens
             else:
                 current_units.append(unit)
@@ -335,9 +326,7 @@ class AdaptiveChunker:
                         units.append(line)
         return units
 
-    def _hard_split(
-        self, text: str, chunk_size: int, chunk_overlap: int
-    ) -> list[str]:
+    def _hard_split(self, text: str, chunk_size: int, chunk_overlap: int) -> list[str]:
         """Force-split text that exceeds chunk_size by raw token slicing."""
         tokens = self._encode(text)
         chunks: list[str] = []
@@ -352,16 +341,14 @@ class AdaptiveChunker:
     # ── tokenizer helpers ────────────────────────────────────────────────
 
     @staticmethod
-    def _load_tokenizer():  # noqa: ANN205
+    def _load_tokenizer():
         """Load tiktoken cl100k_base encoder."""
         try:
             import tiktoken
 
             return tiktoken.get_encoding("cl100k_base")
         except ImportError:
-            logger.warning(
-                "tiktoken not installed; falling back to whitespace token count"
-            )
+            logger.warning("tiktoken not installed; falling back to whitespace token count")
             return None
 
     def _count_tokens(self, text: str) -> int:

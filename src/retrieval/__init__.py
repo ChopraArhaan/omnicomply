@@ -33,27 +33,27 @@ from src.retrieval.vector_store import (
 )
 
 __all__ = [
+    "BM25Index",
+    "CacheResult",
+    "CacheStats",
+    "DocumentChunk",
     # Embeddings
     "EmbeddingService",
-    # Vector store
-    "PgVectorStore",
-    "DocumentChunk",
-    "SearchResult",
-    # Knowledge graph
-    "KnowledgeGraphStore",
     "Entity",
     "GraphEdge",
     "GraphNode",
     "GraphResult",
-    # Reranker
-    "Reranker",
-    # Semantic cache
-    "SemanticCache",
-    "CacheResult",
-    "CacheStats",
     # Hybrid retriever
     "HybridRetriever",
-    "BM25Index",
+    # Knowledge graph
+    "KnowledgeGraphStore",
+    # Vector store
+    "PgVectorStore",
+    # Reranker
+    "Reranker",
     "RetrievalResult",
     "RetrievalSource",
+    "SearchResult",
+    # Semantic cache
+    "SemanticCache",
 ]

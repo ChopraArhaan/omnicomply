@@ -4,14 +4,12 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
-from typing import Any
+from typing import TYPE_CHECKING
 
 import structlog
-from src.agents.state import AgentState
-from src.config.prompts.report_generation import (
-    AUDIT_REPORT_SYSTEM_PROMPT,
-    AUDIT_REPORT_TEMPLATE,
-)
+
+if TYPE_CHECKING:
+    from src.agents.state import AgentState
 
 logger = structlog.get_logger(__name__)
 
@@ -34,13 +32,15 @@ class ReportAgent:
         chunks = state.get("chunks") or []
 
         report_id = f"AUD-{uuid.uuid4().hex[:8].upper()}"
-        generated_at = dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%d %H:%M:%S UTC")
+        generated_at = dt.datetime.now(dt.UTC).strftime("%Y-%m-%d %H:%M:%S UTC")
         domain = classification.get("domain", "General Regulatory")
         urgency = classification.get("urgency", "MEDIUM")
         overall_score = risk.get("overall_score", 0.0)
         risk_level = risk.get("risk_level", "MEDIUM")
         recs = risk.get("recommendations", ["Periodic audit recommended."])
-        exec_sum = summary.get("summary_text", "Comprehensive review completed across provided materials.")
+        exec_sum = summary.get(
+            "summary_text", "Comprehensive review completed across provided materials."
+        )
 
         # Build evidence chain
         evidence_lines = []
@@ -49,18 +49,22 @@ class ReportAgent:
             src = chunk.get("metadata", {}).get("source", "Document Filing")
             page = chunk.get("metadata", {}).get("page_num", 1)
             preview = chunk.get("content", "")[:120].replace("\n", " ")
-            evidence_lines.append(f"- **[EVID-{idx+1}]** `{chunk_id}` ({src}, p. {page}): \"{preview}...\"")
+            evidence_lines.append(
+                f'- **[EVID-{idx + 1}]** `{chunk_id}` ({src}, p. {page}): "{preview}..."'
+            )
 
-        evidence_section = "\n".join(evidence_lines) if evidence_lines else "- No direct chunks mapped."
+        evidence_section = (
+            "\n".join(evidence_lines) if evidence_lines else "- No direct chunks mapped."
+        )
 
         # Compile formatted markdown report
         report_markdown = f"""# Regulatory Compliance Audit Report
 
-**Report ID:** `{report_id}`  
-**Generated:** {generated_at}  
-**Domain Scope:** {domain.title()}  
-**Target Document ID:** `{parsed_doc.get("document_id", "N/A")}`  
-**Overall Risk Score:** **{overall_score}/100 ({risk_level})**  
+**Report ID:** `{report_id}`<br>
+**Generated:** {generated_at}<br>
+**Domain Scope:** {domain.title()}<br>
+**Target Document ID:** `{parsed_doc.get("document_id", "N/A")}`<br>
+**Overall Risk Score:** **{overall_score}/100 ({risk_level})**
 
 ---
 
@@ -85,7 +89,7 @@ class ReportAgent:
             status = "🔴 High" if score >= 60 else ("🟡 Moderate" if score >= 30 else "🟢 Low")
             report_markdown += f"| {name} | {score:.1f}/100 | {status} | {desc} |\n"
 
-        report_markdown += f"""
+        report_markdown += """
 ---
 
 ## 3. Corrective Action Plan & Recommendations
