@@ -19,7 +19,7 @@ import structlog
 from pydantic import BaseModel
 from redis.asyncio import Redis
 from redis.commands.search.field import TagField, TextField, VectorField
-from redis.commands.search.indexDefinition import IndexDefinition, IndexType
+from redis.commands.search.index_definition import IndexDefinition, IndexType
 from redis.commands.search.query import Query
 
 logger = structlog.get_logger(__name__)
