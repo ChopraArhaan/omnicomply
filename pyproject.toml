@@ -27,6 +27,10 @@ Homepage = "https://github.com/ChopraArhaan/omnicomply"
 Repository = "https://github.com/ChopraArhaan/omnicomply"
 Issues = "https://github.com/ChopraArhaan/omnicomply/issues"
 
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["src", "src.*", "eval", "eval.*"]
+
 [tool.ruff]
 target-version = "py311"
 line-length = 100
