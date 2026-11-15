@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import pytest
+
 from src.config.settings import Settings
 from src.ingestion.pdf_parser import PageContent, ParsedDocument
 
