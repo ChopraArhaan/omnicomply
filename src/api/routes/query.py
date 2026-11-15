@@ -10,14 +10,19 @@ from fastapi import APIRouter, HTTPException, Query
 from pydantic import BaseModel, Field
 from sse_starlette.sse import EventSourceResponse
 
-from src.agents.graph import run_graph
-
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
 logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1/query", tags=["Compliance Query"])
+
+
+async def run_graph(initial_state: dict[str, Any]) -> dict[str, Any]:
+    """Load the model-backed agent graph only when a query is executed."""
+    from src.agents.graph import run_graph as execute_graph
+
+    return await execute_graph(initial_state)
 
 
 class QueryRequest(BaseModel):
