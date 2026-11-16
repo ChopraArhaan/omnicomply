@@ -10,9 +10,13 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  workflow_dispatch:
 
 env:
   PYTHON_VERSION: "3.11"
+
+permissions:
+  contents: read
 
 jobs:
   # ---------------------------------------------------------------------------
@@ -73,13 +77,13 @@ jobs:
           fail_ci_if_error: false
 
   # ---------------------------------------------------------------------------
-  # Eval Gate — Block merge if RAG metrics regress
+  # Eval Gate — Enforce production RAG quality thresholds
   # ---------------------------------------------------------------------------
   eval-gate:
     name: "📊 Eval Gate"
     runs-on: ubuntu-latest
     needs: test
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
@@ -110,3 +114,29 @@ jobs:
           path: eval/reports/outputs/
           retention-days: 30
 
+      - name: Publish Step Summary Table
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const path = 'eval/reports/outputs/ci_eval_report.json';
+            if (fs.existsSync(path)) {
+              const data = JSON.parse(fs.readFileSync(path, 'utf8'));
+              const f = (data.metric_averages.faithfulness * 100).toFixed(1);
+              const r = (data.metric_averages.answer_relevancy * 100).toFixed(1);
+              const p = (data.metric_averages.context_precision * 100).toFixed(1);
+              const a = (data.metric_averages.regulatory_accuracy * 100).toFixed(1);
+
+              await core.summary
+                .addHeading('📊 Production RAG Quality Evaluation Gate')
+                .addTable([
+                  [{data: 'Metric', header: true}, {data: 'Score', header: true}, {data: 'Threshold', header: true}, {data: 'Status', header: true}],
+                  ['Faithfulness', `${f}%`, '90.0%', data.metric_averages.faithfulness >= 0.90 ? '✅ PASS' : '❌ FAIL'],
+                  ['Answer Relevancy', `${r}%`, '85.0%', data.metric_averages.answer_relevancy >= 0.85 ? '✅ PASS' : '❌ FAIL'],
+                  ['Context Precision', `${p}%`, '80.0%', data.metric_averages.context_precision >= 0.80 ? '✅ PASS' : '❌ FAIL'],
+                  ['Regulatory Accuracy', `${a}%`, '85.0%', data.metric_averages.regulatory_accuracy >= 0.85 ? '✅ PASS' : '❌ FAIL']
+                ])
+                .addParagraph(`**Overall Pass Rate:** ${(data.overall_pass_rate * 100).toFixed(1)}% across ${data.total_test_cases} golden test cases.`)
+                .write();
+            }
