@@ -61,7 +61,7 @@ class ComplianceRiskScorer:
         r"\$\s*\d+(?:,\d{3})*(?:\.\d+)?\s*(?:million|billion|thousand)?",
         r"civil\s+penalt(?:y|ies)",
         r"criminal\s+liabilit(?:y|ies)",
-        r"fine[s]?\s+(?:up\s+to|not\s+exceeding|of)",
+        r"(?:fine|penalt(?:y|ies))[s]?\s+(?:up\s+to|not\s+exceeding|of)",
         r"imprisonment",
         r"injunction",
         r"cease\s+and\s+desist",
@@ -70,15 +70,16 @@ class ComplianceRiskScorer:
     ENFORCEMENT_PATTERNS: ClassVar[list[str]] = [
         r"enforcement\s+action",
         r"mandatory\s+compliance",
-        r"shall\s+(?:immediately|forthwith|promptly)",
+        r"shall\s+(?:immediately|forthwith|promptly|be)",
         r"strictly\s+prohibited",
         r"revocation\s+of\s+license",
         r"suspension",
+        r"non-compliant",
     ]
 
     DEADLINE_PATTERNS: ClassVar[list[str]] = [
         r"within\s+\d+\s+days",
-        r"effective\s+immediately",
+        r"(?:effective\s+|taken\s+)?immediately",
         r"no\s+later\s+than",
         r"deadline\s+(?:is|of)",
         r"compliance\s+date",
@@ -234,9 +235,9 @@ class ComplianceRiskScorer:
         """Map numeric score to RiskLevel."""
         if score >= 75.0:
             return RiskLevel.CRITICAL
-        if score >= 50.0:
+        if score >= 40.0:
             return RiskLevel.HIGH
-        if score >= 25.0:
+        if score >= 20.0:
             return RiskLevel.MEDIUM
         return RiskLevel.LOW
 

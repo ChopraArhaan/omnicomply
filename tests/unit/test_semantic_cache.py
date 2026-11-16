@@ -12,7 +12,19 @@ from src.retrieval.semantic_cache import CacheStats, SemanticCache
 @pytest.fixture
 def mock_cache():
     cache = SemanticCache(redis_url="redis://localhost:6379/0", similarity_threshold=0.90)
-    cache._redis = AsyncMock()
+    mock_redis = AsyncMock()
+    mock_redis.hgetall.return_value = {
+        b"total_lookups": b"10",
+        b"total_hits": b"8",
+        b"total_latency_ms": b"15.5",
+    }
+
+    async def mock_scan_iter(match=None):
+        for key in [b"entry1", b"entry2"]:
+            yield key
+
+    mock_redis.scan_iter = mock_scan_iter
+    cache._redis = mock_redis
     return cache
 
 

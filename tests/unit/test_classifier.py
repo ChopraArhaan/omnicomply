@@ -15,11 +15,16 @@ from src.analysis.classifier import (
 
 @pytest.fixture
 def mock_pipeline():
-    mock = MagicMock()
-    mock.return_value = {
-        "labels": ["financial", "technology", "trade"],
-        "scores": [0.85, 0.10, 0.05],
-    }
+    def _mock_call(text, candidate_labels=None, **kwargs):
+        labels = candidate_labels or ["financial", "technology", "trade"]
+        n = len(labels)
+        scores = [0.85] + [0.15 / max(1, n - 1)] * (n - 1)
+        return {
+            "labels": labels,
+            "scores": scores,
+        }
+
+    mock = MagicMock(side_effect=_mock_call)
     return mock
 
 
