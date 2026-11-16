@@ -28,9 +28,12 @@ def main() -> int:
                 baseline_report = json.load(f)
             print(f"📊 Loaded prior baseline from {baseline_path}")
         except Exception as e:
-            print(f"⚠️ Warning: Could not parse baseline report ({e}). Treating as initial run.")
+            print(f"[WARN] Could not parse baseline report ({e}). Treating as initial run.")
     else:
-        print("ℹ️ No prior baseline artifact found (first run or expired retention). Skipping baseline delta comparison.")
+        print(
+            "[INFO] No prior baseline artifact found (first run or expired retention). "
+            "Skipping baseline delta comparison."
+        )
 
     evaluator = RAGEvaluator()
     report = evaluator.evaluate_dataset(dataset_path)
@@ -45,7 +48,9 @@ def main() -> int:
         for k, v in report.metric_averages.items():
             prev = base_avgs.get(k, v)
             diff = v - prev
-            delta_lines.append(f"- {k.replace('_', ' ').title()}: {v:.1%} (Δ {diff:+.1%} vs baseline)")
+            delta_lines.append(
+                f"- {k.replace('_', ' ').title()}: {v:.1%} (Δ {diff:+.1%} vs baseline)"
+            )
     else:
         for k, v in report.metric_averages.items():
             delta_lines.append(f"- {k.replace('_', ' ').title()}: {v:.1%}")

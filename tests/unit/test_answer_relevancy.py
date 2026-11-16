@@ -29,7 +29,7 @@ def test_known_good_qa_pair_scores_above_threshold() -> None:
     assert result.passed is True
     assert result.score >= 0.85
     assert result.threshold == 0.85
-    assert "answer_relevancy" == result.name
+    assert result.name == "answer_relevancy"
 
 
 def test_irrelevant_pair_scores_well_below_threshold() -> None:
