@@ -151,18 +151,27 @@ class RegulatoryClassifier:
         self,
         model_name: str = DEFAULT_MODEL,
         device: int = -1,
+        classifier_pipeline: Any = None,
     ) -> None:
-        logger.info(
-            "classifier.loading_model",
-            model=model_name,
-            device=device,
-        )
-        self._classifier = pipeline(
-            "zero-shot-classification",
-            model=model_name,
-            device=device,
-        )
-        logger.info("classifier.model_loaded", model=model_name)
+        self._model_name = model_name
+        self._device = device
+        self._classifier_instance = classifier_pipeline
+
+    @property
+    def _classifier(self) -> Any:
+        if self._classifier_instance is None:
+            logger.info(
+                "classifier.loading_model",
+                model=self._model_name,
+                device=self._device,
+            )
+            self._classifier_instance = pipeline(
+                "zero-shot-classification",
+                model=self._model_name,
+                device=self._device,
+            )
+            logger.info("classifier.model_loaded", model=self._model_name)
+        return self._classifier_instance
 
     # ------------------------------------------------------------------
     # Internal helpers

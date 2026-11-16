@@ -42,13 +42,14 @@ def test_classify_domain_with_mock(mock_pipeline):
         assert 0.0 <= result.confidence <= 1.0
 
 
-def test_classify_urgency_critical():
-    classifier = RegulatoryClassifier()
-    # Direct keyword triggers
-    urgency = classifier.classify_urgency(
-        "EMERGENCY ORDER: All institutions shall immediately cease and desist with immediate effect."
-    )
-    assert urgency in [UrgencyLevel.CRITICAL, UrgencyLevel.HIGH]
+def test_classify_urgency_critical(mock_pipeline):
+    with patch("src.analysis.classifier.pipeline", return_value=mock_pipeline):
+        classifier = RegulatoryClassifier()
+        # Direct keyword triggers
+        urgency = classifier.classify_urgency(
+            "EMERGENCY ORDER: All institutions shall immediately cease and desist with immediate effect."
+        )
+        assert urgency in [UrgencyLevel.CRITICAL, UrgencyLevel.HIGH]
 
 
 def test_classify_document_type(mock_pipeline):

@@ -31,14 +31,24 @@ def test_analysis_risk_assessment():
 
 
 def test_analysis_semantic_diff():
-    payload = {
-        "base_text": "Brokers must retain records for 3 years.",
-        "updated_text": "Brokers must retain records for 5 years and report annually.",
-    }
-    response = client.post("/api/v1/analysis/semantic-diff", json=payload)
-    assert response.status_code == 200
-    data = response.json()
-    assert "overall_similarity" in data
+    from src.analysis.semantic_diff import SemanticDiff
+
+    mock_diff = SemanticDiff(
+        added_sections=[],
+        removed_sections=[],
+        modified_sections=[],
+        overall_similarity=0.85,
+    )
+    with patch("src.api.routes.analysis.get_diff_engine") as mock_get:
+        mock_get.return_value.compute_diff.return_value = mock_diff
+        payload = {
+            "base_text": "Brokers must retain records for 3 years.",
+            "updated_text": "Brokers must retain records for 5 years and report annually.",
+        }
+        response = client.post("/api/v1/analysis/semantic-diff", json=payload)
+        assert response.status_code == 200
+        data = response.json()
+        assert "overall_similarity" in data
 
 
 def test_query_ask_mocked():

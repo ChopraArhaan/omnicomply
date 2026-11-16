@@ -17,11 +17,38 @@ logger = structlog.get_logger(__name__)
 
 router = APIRouter(prefix="/api/v1/analysis", tags=["Regulatory Analysis"])
 
-# Instantiate service singletons
-classifier = RegulatoryClassifier()
-risk_scorer = ComplianceRiskScorer()
-diff_engine = SemanticDiffEngine()
-forecaster = RegulatoryForecaster()
+_classifier: RegulatoryClassifier | None = None
+_risk_scorer: ComplianceRiskScorer | None = None
+_diff_engine: SemanticDiffEngine | None = None
+_forecaster: RegulatoryForecaster | None = None
+
+
+def get_classifier() -> RegulatoryClassifier:
+    global _classifier
+    if _classifier is None:
+        _classifier = RegulatoryClassifier()
+    return _classifier
+
+
+def get_risk_scorer() -> ComplianceRiskScorer:
+    global _risk_scorer
+    if _risk_scorer is None:
+        _risk_scorer = ComplianceRiskScorer()
+    return _risk_scorer
+
+
+def get_diff_engine() -> SemanticDiffEngine:
+    global _diff_engine
+    if _diff_engine is None:
+        _diff_engine = SemanticDiffEngine()
+    return _diff_engine
+
+
+def get_forecaster() -> RegulatoryForecaster:
+    global _forecaster
+    if _forecaster is None:
+        _forecaster = RegulatoryForecaster()
+    return _forecaster
 
 
 class RiskAssessmentRequest(BaseModel):
@@ -43,7 +70,7 @@ class ForecastRequest(BaseModel):
 async def assess_risk(payload: RiskAssessmentRequest) -> RiskAssessment:
     """Calculate multi-dimensional risk score from regulatory text."""
     try:
-        assessment = risk_scorer.score_document(
+        assessment = get_risk_scorer().score_document(
             text=payload.text,
             domain=payload.domain,
         )
@@ -57,7 +84,7 @@ async def assess_risk(payload: RiskAssessmentRequest) -> RiskAssessment:
 async def compare_regulations(payload: SemanticDiffRequest) -> SemanticDiff:
     """Detect changes and contradictions between regulatory text versions."""
     try:
-        diff_result = diff_engine.compute_diff(
+        diff_result = get_diff_engine().compute_diff(
             old_doc=payload.base_text,
             new_doc=payload.updated_text,
         )
@@ -71,11 +98,12 @@ async def compare_regulations(payload: SemanticDiffRequest) -> SemanticDiff:
 async def forecast_regulatory_trends(payload: ForecastRequest) -> dict[str, Any]:
     """Forecast future compliance risk and detect anomalies."""
     try:
-        forecast = forecaster.forecast_risk(
+        forecaster_svc = get_forecaster()
+        forecast = forecaster_svc.forecast_risk(
             historical_scores=payload.historical_scores,
             horizon=payload.horizon_days,
         )
-        anomalies = forecaster.detect_anomalies(payload.historical_scores)
+        anomalies = forecaster_svc.detect_anomalies(payload.historical_scores)
         return {
             "forecast": forecast.model_dump(),
             "anomalies": [a.model_dump() for a in anomalies],

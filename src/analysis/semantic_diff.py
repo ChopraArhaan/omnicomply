@@ -186,15 +186,24 @@ class SemanticDiffEngine:
         model_name: str = DEFAULT_MODEL,
         device: str = "cpu",
         similarity_threshold: float = SIMILARITY_THRESHOLD,
+        model: Any = None,
     ) -> None:
-        logger.info(
-            "semantic_diff.loading_model",
-            model=model_name,
-            device=device,
-        )
-        self._model = SentenceTransformer(model_name, device=device)
+        self._model_name = model_name
+        self._device = device
         self._threshold = similarity_threshold
-        logger.info("semantic_diff.model_loaded", model=model_name)
+        self._model_instance = model
+
+    @property
+    def _model(self) -> Any:
+        if self._model_instance is None:
+            logger.info(
+                "semantic_diff.loading_model",
+                model=self._model_name,
+                device=self._device,
+            )
+            self._model_instance = SentenceTransformer(self._model_name, device=self._device)
+            logger.info("semantic_diff.model_loaded", model=self._model_name)
+        return self._model_instance
 
     # ------------------------------------------------------------------
     # Internal helpers
