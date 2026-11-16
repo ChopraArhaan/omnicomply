@@ -92,7 +92,7 @@ jobs:
                     ['Context Precision', `${p}%`, '80.0%', data.metric_averages.context_precision >= 0.80 ? '✅ PASS' : '❌ FAIL'],
                     ['Regulatory Accuracy', `${a}%`, '85.0%', data.metric_averages.regulatory_accuracy >= 0.85 ? '✅ PASS' : '❌ FAIL']
                   ])
-                  .addParagraph(`**Gate Status:** ${data.gate_passed ? '✅ PASSED' : '🚨 REGRESSION DETECTED'} | **Overall Pass Rate:** ${(data.overall_pass_rate * 100).toFixed(1)}% (${data.total_test_cases} test cases)`)
+                  .addRaw(`\n\n**Gate Status:** ${data.gate_passed ? '✅ PASSED' : '🚨 REGRESSION DETECTED'} | **Overall Pass Rate:** ${(data.overall_pass_rate * 100).toFixed(1)}% (${data.total_test_cases} test cases)\n`)
                   .write();
               } catch (e) {
                 if (summaryText) {

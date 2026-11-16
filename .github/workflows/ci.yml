@@ -137,6 +137,6 @@ jobs:
                   ['Context Precision', `${p}%`, '80.0%', data.metric_averages.context_precision >= 0.80 ? '✅ PASS' : '❌ FAIL'],
                   ['Regulatory Accuracy', `${a}%`, '85.0%', data.metric_averages.regulatory_accuracy >= 0.85 ? '✅ PASS' : '❌ FAIL']
                 ])
-                .addParagraph(`**Overall Pass Rate:** ${(data.overall_pass_rate * 100).toFixed(1)}% across ${data.total_test_cases} golden test cases.`)
+                .addRaw(`\n\n**Overall Pass Rate:** ${(data.overall_pass_rate * 100).toFixed(1)}% across ${data.total_test_cases} golden test cases.\n`)
                 .write();
             }
