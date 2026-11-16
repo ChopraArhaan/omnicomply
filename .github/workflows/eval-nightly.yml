@@ -13,10 +13,17 @@ on:
 env:
   PYTHON_VERSION: "3.11"
 
+permissions:
+  contents: read
+  issues: write
+
 jobs:
   nightly-eval:
     name: "🌙 Nightly Regression Suite"
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
     steps:
       - uses: actions/checkout@v4
 
@@ -31,13 +38,6 @@ jobs:
           pip install --upgrade pip
           pip install -r requirements.txt
           pip install -e .
-
-      - name: Download previous eval report
-        uses: actions/download-artifact@v4
-        with:
-          name: nightly-eval-report
-          path: eval/reports/outputs/previous/
-        continue-on-error: true
 
       - name: Run nightly regression
         env:
@@ -54,18 +54,39 @@ jobs:
           path: eval/reports/outputs/
           retention-days: 90
 
-      - name: Comment on regression
-        if: failure()
+      - name: Publish Step Summary & Notify on Regression
+        if: always()
         uses: actions/github-script@v7
         with:
           script: |
             const fs = require('fs');
-            const report = fs.readFileSync('eval/reports/outputs/regression_summary.txt', 'utf8');
-            await github.rest.issues.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `🚨 Nightly Eval Regression Detected - ${new Date().toISOString().split('T')[0]}`,
-              body: `## Evaluation Regression Report\n\n\`\`\`\n${report}\n\`\`\`\n\nPlease investigate the regression in RAG quality metrics.`,
-              labels: ['eval-regression', 'priority:high']
-            });
+            const summaryPath = 'eval/reports/outputs/regression_summary.txt';
+            let report = '';
+            if (fs.existsSync(summaryPath)) {
+              report = fs.readFileSync(summaryPath, 'utf8');
+            } else {
+              report = 'Evaluation complete. Check uploaded artifacts for raw JSON metrics.';
+            }
 
+            // Always publish evaluation report to GitHub Actions Step Summary
+            await core.summary
+              .addHeading('🌙 Nightly Regression Evaluation Summary')
+              .addCodeBlock(report, 'text')
+              .write();
+
+            // When a regression is flagged and the job fails, attempt to create an issue
+            const jobStatus = '${{ job.status }}';
+            if (jobStatus === 'failure') {
+              try {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title: `🚨 Nightly Eval Regression Detected - ${new Date().toISOString().split('T')[0]}`,
+                  body: `## Evaluation Regression Report\n\n\`\`\`\n${report}\n\`\`\`\n\nPlease investigate the regression in RAG quality metrics.`,
+                  labels: ['eval-regression', 'priority:high']
+                });
+                core.info('Successfully created regression tracking issue.');
+              } catch (err) {
+                core.warning(`Could not create GitHub issue (${err.message}). Ensure repository allows Actions write permissions under Settings -> Actions -> General -> Workflow permissions.`);
+              }
+            }
