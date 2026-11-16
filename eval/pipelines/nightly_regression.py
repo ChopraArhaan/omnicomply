@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
 
@@ -17,11 +18,39 @@ def main() -> int:
     output_dir = Path("eval/reports/outputs")
     output_dir.mkdir(parents=True, exist_ok=True)
 
+    baseline_dir = Path("eval/reports/baseline")
+    baseline_path = baseline_dir / "nightly_eval_report.json"
+
+    baseline_report = None
+    if baseline_path.exists():
+        try:
+            with open(baseline_path, encoding="utf-8") as f:
+                baseline_report = json.load(f)
+            print(f"📊 Loaded prior baseline from {baseline_path}")
+        except Exception as e:
+            print(f"⚠️ Warning: Could not parse baseline report ({e}). Treating as initial run.")
+    else:
+        print("ℹ️ No prior baseline artifact found (first run or expired retention). Skipping baseline delta comparison.")
+
     evaluator = RAGEvaluator()
     report = evaluator.evaluate_dataset(dataset_path)
 
     report_path = output_dir / "nightly_eval_report.json"
     evaluator.save_report(report, report_path)
+
+    # Compute comparison with baseline if available
+    delta_lines = []
+    if baseline_report and "metric_averages" in baseline_report:
+        base_avgs = baseline_report["metric_averages"]
+        for k, v in report.metric_averages.items():
+            prev = base_avgs.get(k, v)
+            diff = v - prev
+            delta_lines.append(f"- {k.replace('_', ' ').title()}: {v:.1%} (Δ {diff:+.1%} vs baseline)")
+    else:
+        for k, v in report.metric_averages.items():
+            delta_lines.append(f"- {k.replace('_', ' ').title()}: {v:.1%}")
+
+    delta_text = "\n".join(delta_lines)
 
     # Write summary for GitHub Action notifications
     summary_text = f"""Nightly Evaluation Regression Summary:
@@ -30,10 +59,7 @@ Test Cases Evaluated: {report.total_test_cases}
 Overall Pass Rate: {report.overall_pass_rate:.1%}
 
 Metric Averages:
-- Faithfulness: {report.metric_averages.get("faithfulness", 0.0):.1%}
-- Answer Relevancy: {report.metric_averages.get("answer_relevancy", 0.0):.1%}
-- Context Precision: {report.metric_averages.get("context_precision", 0.0):.1%}
-- Regulatory Accuracy: {report.metric_averages.get("regulatory_accuracy", 0.0):.1%}
+{delta_text}
 
 Gate Status: {"PASSED" if report.gate_passed else "REGRESSION DETECTED"}
 """

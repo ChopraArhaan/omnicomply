@@ -39,6 +39,13 @@ jobs:
           pip install -r requirements.txt
           pip install -e .
 
+      - name: Download previous eval report
+        uses: actions/download-artifact@v4
+        continue-on-error: true
+        with:
+          name: nightly-eval-report
+          path: eval/reports/baseline/
+
       - name: Run nightly regression
         env:
           EVAL_FAITHFULNESS_THRESHOLD: "0.90"
@@ -60,19 +67,41 @@ jobs:
         with:
           script: |
             const fs = require('fs');
+            const reportPath = 'eval/reports/outputs/nightly_eval_report.json';
             const summaryPath = 'eval/reports/outputs/regression_summary.txt';
-            let report = '';
+
+            let summaryText = '';
             if (fs.existsSync(summaryPath)) {
-              report = fs.readFileSync(summaryPath, 'utf8');
-            } else {
-              report = 'Evaluation complete. Check uploaded artifacts for raw JSON metrics.';
+              summaryText = fs.readFileSync(summaryPath, 'utf8');
             }
 
-            // Always publish evaluation report to GitHub Actions Step Summary
-            await core.summary
-              .addHeading('🌙 Nightly Regression Evaluation Summary')
-              .addCodeBlock(report, 'text')
-              .write();
+            if (fs.existsSync(reportPath)) {
+              try {
+                const data = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
+                const f = (data.metric_averages.faithfulness * 100).toFixed(1);
+                const r = (data.metric_averages.answer_relevancy * 100).toFixed(1);
+                const p = (data.metric_averages.context_precision * 100).toFixed(1);
+                const a = (data.metric_averages.regulatory_accuracy * 100).toFixed(1);
+
+                await core.summary
+                  .addHeading('🌙 Nightly Regression Evaluation Summary')
+                  .addTable([
+                    [{data: 'Metric', header: true}, {data: 'Score', header: true}, {data: 'Threshold', header: true}, {data: 'Status', header: true}],
+                    ['Faithfulness', `${f}%`, '90.0%', data.metric_averages.faithfulness >= 0.90 ? '✅ PASS' : '❌ FAIL'],
+                    ['Answer Relevancy', `${r}%`, '85.0%', data.metric_averages.answer_relevancy >= 0.85 ? '✅ PASS' : '❌ FAIL'],
+                    ['Context Precision', `${p}%`, '80.0%', data.metric_averages.context_precision >= 0.80 ? '✅ PASS' : '❌ FAIL'],
+                    ['Regulatory Accuracy', `${a}%`, '85.0%', data.metric_averages.regulatory_accuracy >= 0.85 ? '✅ PASS' : '❌ FAIL']
+                  ])
+                  .addParagraph(`**Gate Status:** ${data.gate_passed ? '✅ PASSED' : '🚨 REGRESSION DETECTED'} | **Overall Pass Rate:** ${(data.overall_pass_rate * 100).toFixed(1)}% (${data.total_test_cases} test cases)`)
+                  .write();
+              } catch (e) {
+                if (summaryText) {
+                  await core.summary.addHeading('🌙 Nightly Regression Evaluation Summary').addCodeBlock(summaryText, 'text').write();
+                }
+              }
+            } else if (summaryText) {
+              await core.summary.addHeading('🌙 Nightly Regression Evaluation Summary').addCodeBlock(summaryText, 'text').write();
+            }
 
             // When a regression is flagged and the job fails, attempt to create an issue
             const jobStatus = '${{ job.status }}';
@@ -82,7 +111,7 @@ jobs:
                   owner: context.repo.owner,
                   repo: context.repo.repo,
                   title: `🚨 Nightly Eval Regression Detected - ${new Date().toISOString().split('T')[0]}`,
-                  body: `## Evaluation Regression Report\n\n\`\`\`\n${report}\n\`\`\`\n\nPlease investigate the regression in RAG quality metrics.`,
+                  body: `## Evaluation Regression Report\n\n\`\`\`\n${summaryText}\n\`\`\`\n\nPlease investigate the regression in RAG quality metrics.`,
                   labels: ['eval-regression', 'priority:high']
                 });
                 core.info('Successfully created regression tracking issue.');
